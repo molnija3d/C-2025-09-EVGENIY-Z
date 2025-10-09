@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <locale.h>
 
 #define ZIP_SIGNATURE 0x504b0304 // "PK\03\04" in little-endian
 
@@ -8,6 +9,8 @@ int extract_files(FILE *fin, FILE *fout);
 
 int main(int argc, char **argv)
 {
+    setlocale(LC_ALL, ".UTF-8");
+
     if (argc != 2)
     {
         printf("USAGE: %s <file>\n", argv[0]);
