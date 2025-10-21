@@ -4,31 +4,34 @@
 #include "curl/curl.h"
 #include <locale.h>
 
-static size_t mem_cb(void *contents, size_t size, size_t nmemb, void *userp);
-void print_weather_info(cJSON *root);
-int name_is_ok(char *str);
-
 typedef struct
 {
   char *memory;
   size_t size;
 } response_t;
 
+/*Callback function to store data in memory */
+static size_t mem_cb(void *contents, size_t size, size_t nmemb, void *userp);
+/*Parse and print JSON */
+void print_weather_info(cJSON *root);
+
+/*Check if name is correct*/
+int name_is_ok(char *str);
+
 int main(int argc, char **argv)
 {
   setlocale(LC_ALL, ".UTF-8");
-
   if (argc != 2)
   {
     printf("USAGE: %s <City name>\n", argv[0]);
-   goto exit_failure;
+    goto exit_failure;
   }
   if (!name_is_ok(argv[1]))
   {
     printf("Wrong name! Use only latin letters.\n");
     goto exit_failure;
   }
-
+  /*Prepare URL*/
   char url[256] = "https://wttr.in/";
   strncat(url, argv[1], strlen(argv[1]));
   strcat(url, "?format=j2");
@@ -41,23 +44,17 @@ int main(int argc, char **argv)
   curl = curl_easy_init();
   if (curl)
   {
+    /* chunk = structure, that describes recieved data */
     response_t chunk = {.memory = malloc(0), .size = 0};
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    /*mem_cb - callback function to proccess data */
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, mem_cb);
+    /*chunk - where to store data*/
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
     res = curl_easy_perform(curl);
     if (CURLE_OK == res)
     {
-      /*
-            char *ct;
-            res = curl_easy_getinfo(curl, CURLINFO_CONTENT_TYPE, &ct);
-
-            if ((CURLE_OK == res) && ct)
-            {
-              printf("We received Content-Type: %s\n", ct);
-            }
-      */
       cJSON *json_response = cJSON_Parse(chunk.memory);
       if (json_response == NULL)
       {
@@ -73,18 +70,18 @@ int main(int argc, char **argv)
         cJSON_Delete(json_response);
       }
     }
-    else{
+    else
+    {
       printf("Network error, check the connection.\n");
     }
-
     /* always cleanup */
-
     curl_easy_cleanup(curl);
     free(chunk.memory);
   }
   curl_global_cleanup();
 
   return 0;
+
 exit_failure:
   return EXIT_FAILURE;
 }
@@ -98,7 +95,7 @@ int name_is_ok(char *str)
     {
       i++;
     }
-    else 
+    else
     {
       return 0;
     }
@@ -119,9 +116,12 @@ static size_t mem_cb(void *contents, size_t size, size_t nmemb, void *userp)
     return 0;
   }
 
+  /* write content block to last memory position */
   mem->memory = ptr;
   memcpy(&(mem->memory[mem->size]), contents, realsize);
+  /* actualize memory size */
   mem->size += realsize;
+  /* putting tail symbol */
   mem->memory[mem->size] = 0;
 
   return realsize;
@@ -129,14 +129,13 @@ static size_t mem_cb(void *contents, size_t size, size_t nmemb, void *userp)
 
 void print_weather_info(cJSON *root)
 {
-
+  /*parsing nearest "area" section */
   cJSON *nearest_area = cJSON_GetObjectItem(root, "nearest_area");
   if (nearest_area && cJSON_IsArray(nearest_area))
   {
     cJSON *area = cJSON_GetArrayItem(nearest_area, 0);
     if (area)
     {
-
       cJSON *region = cJSON_GetObjectItem(area, "region");
       if (region && cJSON_IsArray(region))
       {
@@ -153,13 +152,13 @@ void print_weather_info(cJSON *root)
     }
   }
 
+  /* parsing "current_condition" section */
   cJSON *current_condition = cJSON_GetObjectItem(root, "current_condition");
   if (current_condition && cJSON_IsArray(current_condition))
   {
     cJSON *condition = cJSON_GetArrayItem(current_condition, 0);
     if (condition)
     {
-
       cJSON *description = cJSON_GetObjectItem(condition, "weatherDesc");
       if (description && cJSON_IsArray(description))
       {
@@ -191,13 +190,13 @@ void print_weather_info(cJSON *root)
     }
   }
 
+  /* parsing "weather" section */
   cJSON *weather = cJSON_GetObjectItem(root, "weather");
   if (weather && cJSON_IsArray(weather))
   {
     cJSON *weather_today = cJSON_GetArrayItem(weather, 0);
     if (weather_today)
     {
-
       cJSON *mintemp_c = cJSON_GetObjectItem(weather_today, "mintempC");
       cJSON *maxtemp_c = cJSON_GetObjectItem(weather_today, "maxtempC");
       if (cJSON_IsString(mintemp_c))
