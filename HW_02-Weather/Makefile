@@ -1,10 +1,15 @@
+CFLAGS = -Wall -Wextra -Wpedantic -std=c11
+LDFLAGS = -L ./LIBS -lcjson -lcurl
 
 all: solution
 
-solution: main.c
-	$(CC) $^ -o $@ -L ./LIBS -lcjson -lcurl -Wall -Wextra -Wpedantic -std=c11
+debug: CFLAGS += --debug
+debug: solution
 
+solution: main.c
+	$(CC) $^ -o $@ $(CFLAGS) $(LDFLAGS)
+	
 clean:
-	rm -f solution core
+	rm -f solution* core
 
 .PHONY: all clean
