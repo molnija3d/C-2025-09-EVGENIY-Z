@@ -1,5 +1,5 @@
     bits 64
-    extern malloc, puts, printf, fflush, abort
+    extern malloc, puts, printf, fflush, abort, free
     global main
 
     section   .data
@@ -129,7 +129,20 @@ ff:
 
 outf:
     ret
+;;; free_list proc
+free_list:
+    test rdi, rdi ;check if list is not zero
+    jz .end_free
 
+    push rdi ;save pointer to list
+    mov rdi, [rdi + 8] ;move to rdi list->next
+    call free_list ;recurisvely call free_list
+    pop rdi ;restore rdi (pointer to list)
+ 
+    call free ; free list
+
+.end_free:
+    ret
 ;;; main proc
 main:
     mov rbp, rsp; for correct debugging
@@ -144,7 +157,7 @@ adding_loop:
     dec rbx
     jnz adding_loop
 
-    mov rbx, rax ;store pinter to list
+    mov rbx, rax ;store pointer to list in rbx
 
     mov rdi, rax ;pointer to list - first param
     mov rsi, print_int ;pointer to print function - second param
@@ -157,6 +170,7 @@ adding_loop:
     xor rsi, rsi ;second paream - zero
     mov rdi, rbx ;first param - pointer to list
     call f
+    mov r12, rax ;store pointer to list in r12 
 
     mov rdi, rax ;first param - pointer to filtered list
     mov rsi, print_int ;sedond param - pointer to print_int
@@ -165,7 +179,13 @@ adding_loop:
     mov rdi, empty_str
     call puts ;puts empty string
 
+    mov rdi, rbx ;first param - pointer to list
+    call free_list
+    mov rdi, r12 ;first param - pinter to filtered list
+    call free_list
+
     pop rbx
+
 
     xor rax, rax ;zeroing
     ret
