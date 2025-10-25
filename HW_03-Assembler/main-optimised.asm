@@ -62,21 +62,22 @@ add_element:
 m:  ;apply func to every element of the list. Mapping function
     ;rdi pointer to list
     ;rsi pointer to print function
-    push rbp
-    push rbx
-    mov rbp, rsi
-    mov rbx, rdi
+    ;loop version instead of recursion
+    push rbp ;save rbp
+    push rbx ;save rbx
+    mov rbp, rsi ;save pointer to function
+    mov rbx, rdi ;save pointer to list
  
  loopmf:
-    test rbx,rbx
+    test rbx,rbx ;if zero, end loop
     jz endmf
-    mov rdi, [rbx]
+    mov rdi, [rbx] ;first param - load value of the list node
     call rbp ;call function
     mov rbx, [rbx+8] ; load list->next to rdi (first param)
     jmp loopmf;
 endmf:
-    pop rbx
-    pop rbp
+    pop rbx ;restore rbx
+    pop rbp ;restore rbp
     ret
 ;;; f proc
 f: ;filter function, creates new filtered list
