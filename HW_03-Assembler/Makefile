@@ -3,10 +3,16 @@ LDFLAGS =
 
 all: solution
 asm: asm-prog
+optimised: main-optimised.o
 
 asm-prog: main.o
 	$(CC) -g -no-pie $^ -o $@
 main.o: main.asm
+	$(AS) -g -felf64 $^
+	
+optimised: main-optimised.o
+	$(CC) -g -no-pie $^ -o $@
+main-optimised: main-optimised.asm
 	$(AS) -g -felf64 $^
 
 debug: CFLAGS += --debug
@@ -16,6 +22,6 @@ solution: main.c
 	$(CC) $^ -o $@ $(CFLAGS) $(LDFLAGS)
 	
 clean:
-	rm -f solution* asm-prog* core
+	rm -f solution* asm-prog* optimised* core
 
 .PHONY: all clean
