@@ -63,6 +63,9 @@ m:  ;apply func to every element of the list. Mapping function
     ;rdi pointer to list
     ;rsi pointer to print function
     push rbp
+    
+    mov rbp, rsp
+ 
  loopmf:
     test rdi,rdi
     jz endmf
@@ -70,8 +73,9 @@ m:  ;apply func to every element of the list. Mapping function
     mov rdi, [rdi+8] ; load list->next to rdi (first param)
     jmp loopmf;
 endmf:
+    
     pop rbp
-
+    ret
 ;;; f proc
 f: ;filter function, creates new filtered list
     mov rax, rsi ; save pointer to accum list (return value) 
