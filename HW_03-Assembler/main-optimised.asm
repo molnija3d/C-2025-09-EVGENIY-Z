@@ -68,7 +68,7 @@ m:  ;apply func to every element of the list. Mapping function
     mov rbx, rdi
  
  loopmf:
-    test rdi,rdi
+    test rbx,rbx
     jz endmf
     mov rdi, rbx
     call rbp ;call function
