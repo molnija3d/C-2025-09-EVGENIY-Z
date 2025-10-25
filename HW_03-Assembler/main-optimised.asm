@@ -70,7 +70,7 @@ m:  ;apply func to every element of the list. Mapping function
  loopmf:
     test rbx,rbx
     jz endmf
-    mov rdi, rbx
+    mov rdi, [rbx]
     call rbp ;call function
     mov rbx, [rbx+8] ; load list->next to rdi (first param)
     jmp loopmf;
