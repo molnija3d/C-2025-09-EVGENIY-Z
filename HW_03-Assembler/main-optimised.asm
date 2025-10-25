@@ -63,17 +63,19 @@ m:  ;apply func to every element of the list. Mapping function
     ;rdi pointer to list
     ;rsi pointer to print function
     push rbp
-    
-    mov rbp, rsp
+    push rbx
+    mov rbp, rsi
+    mov rbx, rdi
  
  loopmf:
     test rdi,rdi
     jz endmf
-    call rsi ;call function
-    mov rdi, [rdi+8] ; load list->next to rdi (first param)
+    mov rdi, rbx
+    call rbp ;call function
+    mov rbx, [rbx+8] ; load list->next to rdi (first param)
     jmp loopmf;
 endmf:
-    
+    pop rbx
     pop rbp
     ret
 ;;; f proc
