@@ -72,11 +72,6 @@ m:  ;apply func to every element of the list. Mapping function
 end_m:
     pop rbp
 
-outm:
-    mov rsp, rbp
-    pop rbp
-    ret
-
 ;;; f proc
 f: ;filter function, creates new filtered list
     mov rax, rsi ; save pointer to accum list (return value) 
