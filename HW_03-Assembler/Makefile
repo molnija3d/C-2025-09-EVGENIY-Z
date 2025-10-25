@@ -12,7 +12,7 @@ main.o: main.asm
 	
 optimised: main-optimised.o
 	$(CC) -g -no-pie $^ -o $@
-main-optimised: main-optimised.asm
+main-optimised.o: main-optimised.asm
 	$(AS) -g -felf64 $^
 
 debug: CFLAGS += --debug
