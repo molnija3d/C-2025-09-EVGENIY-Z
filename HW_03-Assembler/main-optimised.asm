@@ -79,7 +79,7 @@ endmf:
     pop rbx ;restore rbx
     pop rbp ;restore rbp
     ret
-;;; f proc
+
 ;;; f proc - ITERATIVE VERSION (filter function)
 f:
     push rbx
@@ -104,22 +104,10 @@ f:
     
     ; Value matches predicate - add to result list
     mov rdi, [rbx]             ; value to add
-    xor rsi, rsi               ; next = NULL
+    mov rsi, r12             ; second param - rsi (pointer to new list)
     call add_element           ; create new node
-    
-    ; Append to result list (maintains original order)
-    test r12, r12              ; check if result list is empty
-    jnz .append_to_list
-    
-    ; First node in result list
-    mov r12, rax               ; set as head
-    mov rcx, rax               ; set as tail
-    jmp .next_node
-    
-.append_to_list:
-    mov [rcx + 8], rax         ; tail->next = new node
-    mov rcx, rax               ; update tail to new node
-    
+    mov r12, rax         ; tail->next = new node
+
 .next_node:
     mov rbx, [rbx + 8]         ; move to next node in input list
     jmp .filter_loop
@@ -130,7 +118,7 @@ f:
     pop r12
     pop rbx
     ret
-    
+
 ;;; free_list proc
 free_list:
     test rdi, rdi ;check if list is not zero
