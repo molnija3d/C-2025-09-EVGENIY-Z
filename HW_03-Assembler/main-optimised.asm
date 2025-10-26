@@ -80,46 +80,57 @@ endmf:
     pop rbp ;restore rbp
     ret
 ;;; f proc
-f: ;filter function, creates new filtered list
-    mov rax, rsi ; save pointer to accum list (return value) 
-
-    test rdi, rdi ;rdi - pointer to list, test if not zero
-    jz outf ;if null - return
-
+;;; f proc - ITERATIVE VERSION (filter function)
+f:
     push rbx
     push r12
     push r13
-
-    mov rbx, rdi ;pointer to list
-    mov r12, rsi ;second param save pointer to accum list?
-    mov r13, rdx ;save pointer to function
-
-    mov rdi, [rdi] ; first param list->value
-     ; rsi - pointer to store list
-    call rdx ;call fuction
-    test rax, rax ;test if return value not zero
-    jz z ;jump if zero
-
-    mov rdi, [rbx] ;first param - list->value
-    mov rsi, r12   ;second param - pointer to accum list
-    call add_element ;add_element
-    mov rsi, rax ;load pointer to element to rsi
-    jmp ff
-
-z:
-    mov rsi, r12 ;save pointer pointer to accum list in rsi
-
-ff:
-    mov rdi, [rbx + 8] ;first param - list -> next
-    mov rdx, r13 ;second param - pointer to function
-    call f ;recursion
-
+    
+    mov rbx, rdi               ; rbx = current node in input list
+    mov r12, rsi               ; r12 = accumulator (head of result list)
+    mov r13, rdx               ; r13 = predicate function
+    
+    xor rcx, rcx               ; rcx = tail of result list (NULL initially)
+    
+.filter_loop:
+    test rbx, rbx              ; check if end of input list
+    jz .filter_done
+    
+    ; Test current value with predicate
+    mov rdi, [rbx]             ; get current value
+    call r13                   ; call predicate
+    test rax, rax              ; check result
+    jz .next_node
+    
+    ; Value matches predicate - add to result list
+    mov rdi, [rbx]             ; value to add
+    xor rsi, rsi               ; next = NULL
+    call add_element           ; create new node
+    
+    ; Append to result list (maintains original order)
+    test r12, r12              ; check if result list is empty
+    jnz .append_to_list
+    
+    ; First node in result list
+    mov r12, rax               ; set as head
+    mov rcx, rax               ; set as tail
+    jmp .next_node
+    
+.append_to_list:
+    mov [rcx + 8], rax         ; tail->next = new node
+    mov rcx, rax               ; update tail to new node
+    
+.next_node:
+    mov rbx, [rbx + 8]         ; move to next node in input list
+    jmp .filter_loop
+    
+.filter_done:
+    mov rax, r12               ; return head of result list
     pop r13
     pop r12
     pop rbx
-
-outf:
     ret
+    
 ;;; free_list proc
 free_list:
     test rdi, rdi ;check if list is not zero
