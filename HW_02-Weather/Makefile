@@ -1,5 +1,5 @@
-CFLAGS = -Wall -Wextra -Wpedantic -std=c11
-LDFLAGS =  -lcjson -lcurl
+CFLAGS += -Wall -Wextra -Wpedantic -std=c11
+LDFLAGS += -L ./ -lcjson -lcurl
 
 all: solution
 
