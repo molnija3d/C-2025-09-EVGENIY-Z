@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "cJSON/cJSON.h"
-#include "curl/curl.h"
+#include <string.h>
+#include <ctype.h>
 #include <locale.h>
+#include "cjson/cJSON.h"
+#include "curl/curl.h"
 
 typedef struct
 {
@@ -45,7 +47,7 @@ int main(int argc, char **argv)
   if (curl)
   {
     /* chunk = structure, that describes recieved data */
-    response_t chunk = {.memory = malloc(0), .size = 0};
+    response_t chunk = {.memory = malloc(1), .size = 0};
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     /*mem_cb - callback function to proccess data */
