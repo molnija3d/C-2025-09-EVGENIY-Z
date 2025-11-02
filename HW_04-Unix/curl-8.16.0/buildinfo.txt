@@ -1,0 +1,13 @@
+# This is a generated file.  Do not edit.
+buildinfo.configure.tool: configure
+buildinfo.configure.args:  '--disable-option-checking' '--disable-FEATURE' '--disable-silent-rules' '--disable-debug' '--disable-optimize' '--disable-warnings' '--disable-werror' '--disable-curldebug' '--disable-symbol-hiding' '--disable-ares' '--disable-rt' '--disable-httpsrr' '--disable-ech' '--disable-ssls-export' '--disable-dependency-tracking' '--disable-largefile' '--disable-libtool-lock' '--disable-unity' '--disable-http' '--disable-ftp' '--disable-file' '--disable-ipfs' '--disable-ldap' '--disable-ldaps' '--disable-rtsp' '--disable-proxy' '--disable-dict' '--disable-telnet' '--disable-tftp' '--disable-pop3' '--disable-imap' '--disable-smb' '--disable-smtp' '--disable-gopher' '--disable-mqtt' '--disable-manual' '--disable-docs' '--disable-libcurl-option' '--disable-ipv6' '--disable-openssl-auto-load-config' '--disable-ca-search' '--disable-ca-search-safe' '--disable-versioned-symbols' '--disable-windows-unicode' '--disable-threaded-resolver' '--disable-verbose' '--disable-sspi' '--disable-basic-auth' '--disable-bearer-auth' '--disable-digest-auth' '--disable-kerberos-auth' '--disable-negotiate-auth' '--disable-aws' '--disable-ntlm' '--disable-tls-srp' '--disable-unix-sockets' '--disable-cookies' '--disable-socketpair' '--disable-http-auth' '--disable-doh' '--disable-mime' '--disable-bindlocal' '--disable-form-api' '--disable-dateparse' '--disable-netrc' '--disable-progress-meter' '--disable-sha512-256' '--disable-dnsshuffle' '--disable-get-easy-options' '--disable-alt-svc' '--disable-headers-api' '--disable-hsts' '--disable-websockets' '--without-PACKAGE' '--without-ssl' '--without-zlib' '--without-brotli' '--without-zstd' '--without-default-ssl-backend' '--without-ca-bundle' '--without-ca-path' '--without-ca-fallback' '--without-ca-embed' '--without-libpsl' '--without-libgsasl' '--without-ldap' '--without-librtmp' '--without-winidn' '--without-apple-idn' '--without-libidn2' '--without-nghttp2' '--without-ngtcp2' '--without-openssl-quic' '--without-nghttp3' '--without-quiche' '--without-libuv' '--without-zsh-functions-dir' '--without-fish-functions-dir' '--enable-telnet' '--enable-http' '--with-ssl'
+buildinfo.host: x86_64-pc-linux-gnu
+buildinfo.host.cpu: x86_64
+buildinfo.host.os: linux-gnu
+buildinfo.target: x86_64-pc-linux-gnu
+buildinfo.target.cpu: x86_64
+buildinfo.target.os: linux-gnu
+buildinfo.target.flags: UNIX UNIX GCC
+buildinfo.compiler: GNU_C
+buildinfo.compiler.version: 15.2.1
+buildinfo.sysroot: 
