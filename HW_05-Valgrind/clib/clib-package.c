@@ -657,9 +657,6 @@ clib_package_new_from_slug_with_package_name(const char *slug, int verbose,
 #ifdef HAVE_PTHREADS
       init_curl_share();
       _debug("GET %s", json_url);
-      if(res){ //my_fix
-              http_get_free(res);
-      }
       res = http_get_shared(json_url, clib_package_curl_share);
 #else
       res = http_get(json_url);
@@ -678,7 +675,9 @@ clib_package_new_from_slug_with_package_name(const char *slug, int verbose,
   }
 
   free(json_url);
+  json_url = NULL;
   free(name);
+  name = NULL;
 
   if (json) {
     // build package
@@ -752,9 +751,11 @@ clib_package_new_from_slug_with_package_name(const char *slug, int verbose,
 
   if (res) {
     http_get_free(res);
-  } 
-  else {
+    json = NULL;
+    res = NULL;
+  } else {
     free(json);
+    json = NULL;
   }
 
   return pkg;
@@ -1658,7 +1659,7 @@ void clib_package_free(clib_package_t *pkg) {
   FREE(repo_name);
   FREE(url);
   FREE(version);
-  FREE(flags);  
+  FREE(flags);
 #undef FREE
 
   if (pkg->src)
