@@ -1,0 +1,59 @@
+From 75f92cccbd6589d1275c76c16b0688d2a230d89e Mon Sep 17 00:00:00 2001
+From: Molnija3d <molnija3d@yandex.ru>
+Date: Mon, 3 Nov 2025 20:18:10 +0300
+Subject: [PATCH] fix memory leak in clib-package.c
+
+---
+ HW_05-Valgrind/clib/clib-package.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/HW_05-Valgrind/clib/clib-package.c b/HW_05-Valgrind/clib/clib-package.c
+index 268538e..6604ee7 100644
+--- a/HW_05-Valgrind/clib/clib-package.c
++++ b/HW_05-Valgrind/clib/clib-package.c
+@@ -657,6 +657,9 @@ clib_package_new_from_slug_with_package_name(const char *slug, int verbose,
+ #ifdef HAVE_PTHREADS
+       init_curl_share();
+       _debug("GET %s", json_url);
++      if(res){ //my_fix
++              http_get_free(res);
++      }
+       res = http_get_shared(json_url, clib_package_curl_share);
+ #else
+       res = http_get(json_url);
+@@ -675,9 +678,7 @@ clib_package_new_from_slug_with_package_name(const char *slug, int verbose,
+   }
+ 
+   free(json_url);
+-  json_url = NULL;
+   free(name);
+-  name = NULL;
+ 
+   if (json) {
+     // build package
+@@ -751,11 +752,9 @@ clib_package_new_from_slug_with_package_name(const char *slug, int verbose,
+ 
+   if (res) {
+     http_get_free(res);
+-    json = NULL;
+-    res = NULL;
+-  } else {
++  } 
++  else {
+     free(json);
+-    json = NULL;
+   }
+ 
+   return pkg;
+@@ -1659,7 +1658,7 @@ void clib_package_free(clib_package_t *pkg) {
+   FREE(repo_name);
+   FREE(url);
+   FREE(version);
+-  FREE(flags);
++  FREE(flags);  
+ #undef FREE
+ 
+   if (pkg->src)
+-- 
+2.51.0.windows.2
+
