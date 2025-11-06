@@ -1,8 +1,0 @@
-{
-  "name": "clib-package-test-fixture",
-  "version": "0.0.0",
-  "repo": "clibs/no-such-repo",
-  "dependencies": {
-    "list": "*"
-  }
-}
