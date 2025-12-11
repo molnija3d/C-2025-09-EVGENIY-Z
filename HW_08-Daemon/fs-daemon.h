@@ -5,8 +5,8 @@
 #include <signal.h>
 
 #define CONFIG_FILE "./fs-daemon.conf"
-#define DEFAULT_SOCKET_PATH "./fs-daemon.sock"
-#define DEFAULT_FILE_PATH "./testfile.txt"
+#define DEFAULT_SOCKET_PATH "/tmp/fs-daemon.sock"
+#define DEFAULT_FILE_PATH "/tmp/testfile.txt"
 #define BUFFER_SIZE 1024
 #define MAX_CLIENTS 10
 
