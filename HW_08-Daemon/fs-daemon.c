@@ -23,6 +23,9 @@
 
 volatile sig_atomic_t running = 1;
 
+/*
+ * Logging to console
+ * */
 void daemon_log(const char *format, ...) {
     va_list args;
     char buffer[256];
@@ -303,11 +306,12 @@ int main(int argc, char *argv[]) {
     int sockfd, client_fd;
     struct sockaddr_un client_addr;
     socklen_t client_len;
-    int opt;
+    int opt, daemon_flag = 0;
     const char *custom_config = CONFIG_FILE;
     
     for (opt = 1; opt < argc; opt++) {
         if (strcmp(argv[opt], "--no-daemon") == 0 || strcmp(argv[opt], "-n") == 0) {
+            daemon_flag = 1;
             continue;
         } else if (strcmp(argv[opt], "--config") == 0 || strcmp(argv[opt], "-c") == 0) {
             if (++opt < argc) {
@@ -328,12 +332,9 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
     
-    for (opt = 1; opt < argc; opt++) {
-        if (strcmp(argv[opt], "--no-daemon") == 0 || strcmp(argv[opt], "-n") == 0) {
-            config->daemonize = 0;
-        }
+    if(daemon_flag){
+        config->daemonize = 0;
     }
-    
     print_config(config);
     
     setup_signals();
