@@ -8,29 +8,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 
-// Таблица CRC32 (полином 0xEDB88320)
-static uint32_t crc32_table[256];
-
-// Инициализация таблицы CRC32
-static void init_crc32_table(void) {
-    for (uint32_t i = 0; i < 256; i++) {
-        uint32_t c = i;
-        for (int j = 0; j < 8; j++) {
-            c = (c >> 1) ^ (0xEDB88320 & -(c & 1));
-        }
-        crc32_table[i] = c;
-    }
-}
-
-// Вычисление CRC32 для блока данных
-static uint32_t crc32_compute(const void *data, size_t len, uint32_t crc) {
-    const uint8_t *bytes = (const uint8_t *)data;
-    crc = ~crc;
-    for (size_t i = 0; i < len; i++) {
-        crc = (crc >> 8) ^ crc32_table[(crc ^ bytes[i]) & 0xFF];
-    }
-    return ~crc;
-}
+extern uint32_t calculate_crc32c(uint32_t crc32c, const unsigned char *buffer,  unsigned int length);
 
 int main(int argc, char *argv[]) {
     // Проверка аргументов
@@ -46,7 +24,7 @@ int main(int argc, char *argv[]) {
     int success = 0; // Флаг успешного выполнения
     
     // Инициализация таблицы
-    init_crc32_table();
+    //init_crc32_table();
 
     // Открытие файла
     fd = open(filename, O_RDONLY);
@@ -112,7 +90,9 @@ int main(int argc, char *argv[]) {
         }
 
         // Вычисление CRC для текущего блока
-        crc = crc32_compute(mapped, map_size, crc);
+        //extern uint32_t calculate_crc32c(uint32_t crc32c, const unsigned char *buffer,  unsigned int length);
+        //crc = crc32_compute(mapped, map_size, crc);
+        crc = calculate_crc32c(crc, mapped, map_size);
 
         // Освобождение отображения
         if (munmap(mapped, map_size) == -1) {

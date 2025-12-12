@@ -4,12 +4,9 @@ LDFLAGS =
 
 all: check_crc32
 
-check_crc32: check_crc32.c crc32.o 
-	$(CC) $(CFLAGS) $(LDFLAGS) -o check_crc32 check_crc32.c
-
-crc32.o: crc32.c 
-	$(CC) $(CFLAGS) $(LDFLAGS) crc32.c	
+check_crc32: check_crc32.c crc32.c 
+	$(CC) $(CFLAGS) $(LDFLAGS) -o check_crc32 check_crc32.c crc32.c
 
 clean:
-	rm -f *.o fs-daemon 
+	rm -f *.o crc32*
 
