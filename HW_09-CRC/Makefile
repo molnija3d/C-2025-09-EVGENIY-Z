@@ -10,5 +10,5 @@ crc32.0: crc32.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -c crc32.c 
 
 clean:
-	rm -f *.o crc32*
+	rm -f *.o check_crc32 
 
