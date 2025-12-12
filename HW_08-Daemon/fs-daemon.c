@@ -177,33 +177,39 @@ int create_daemon(void) {
     pid_t pid = fork();
     
     if (pid < 0) {
-        daemon_log("fork error: %s", strerror(errno));
+        return -1;  
+    }
+    
+    if (pid > 0) {
+        exit(EXIT_SUCCESS);  
+    }
+    
+  
+    if (setsid() < 0) {
+        return -1;
+    }
+    
+ 
+    pid = fork();
+    
+    if (pid < 0) {
         return -1;
     }
     
     if (pid > 0) {
-        exit(EXIT_SUCCESS);
+        exit(EXIT_SUCCESS);  
     }
     
     umask(0);
-    
-    if (setsid() < 0) {
-        daemon_log("setsid error: %s", strerror(errno));
-        return -1;
-    }
-    
-    if (chdir("/") < 0) {
-        daemon_log("chdir error: %s", strerror(errno));
-        return -1;
-    }
+    chdir("/");
     
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
     
-    open("/dev/null", O_RDONLY);
-    open("/dev/null", O_WRONLY);
-    open("/dev/null", O_WRONLY);
+    open("/dev/null", O_RDONLY);   // stdin
+    open("/dev/null", O_WRONLY);   // stdout  
+    open("/dev/null", O_WRONLY);   // stderr
     
     return 0;
 }
