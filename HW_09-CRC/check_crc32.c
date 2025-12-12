@@ -14,7 +14,7 @@ extern uint32_t update_crc32(uint32_t crc, const void *buf, size_t size);
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
-        fprintf(stderr, "Использование: %s <файл>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <file name>", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -26,20 +26,20 @@ int main(int argc, char *argv[]) {
     
     fd = open(filename, O_RDONLY);
     if (fd == -1) {
-        fprintf(stderr, "Ошибка открытия файла '%s': %s\n",
+        fprintf(stderr, "Error opening file '%s': %s\n",
                 filename, strerror(errno));
         return EXIT_FAILURE;
     }
 
     if (fstat(fd, &st) == -1) {
-        fprintf(stderr, "Ошибка получения информации о файле: %s\n",
+        fprintf(stderr, "Error getting file stat: %s\n",
                 strerror(errno));
         close(fd);
         return EXIT_FAILURE;
     }
 
     if (!S_ISREG(st.st_mode)) {
-        fprintf(stderr, "'%s' не является обычным файлом\n", filename);
+        fprintf(stderr, "'%s' is not a file\n", filename);
         close(fd);
         return EXIT_FAILURE;
     }
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
 
         void *mapped = mmap(NULL, map_size, PROT_READ, MAP_PRIVATE, fd, offset);
         if (mapped == MAP_FAILED) {
-            fprintf(stderr, "Ошибка mmap: %s\n", strerror(errno));
+            fprintf(stderr, "mmap error: %s\n", strerror(errno));
             success = 0;
             break;
         }
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
         crc = update_crc32(crc, mapped, map_size);
 
         if (munmap(mapped, map_size) == -1) {
-            fprintf(stderr, "Предупреждение: ошибка munmap: %s\n", 
+            fprintf(stderr, "Warning: munmap error: %s\n", 
                     strerror(errno));
         }
 
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (close(fd) == -1) {
-        fprintf(stderr, "Ошибка при закрытии файла: %s\n", strerror(errno));
+        fprintf(stderr, "Error closing file: %s\n", strerror(errno));
     }
 
     if (!success && offset < file_size) {
