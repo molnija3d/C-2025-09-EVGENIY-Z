@@ -262,41 +262,54 @@ int compare_referers(const void* a, const void* b) {
     return 0;
 }
 
-// Улучшенный парсер для формата логов
+// Улучшенный парсер, который обрабатывает разные форматы логов
 int parse_log_line(char* line, char** url, long long* bytes, char** referer) {
     char* p = line;
     
-    // Пропускаем IP
-    p = strchr(p, ' ');
+    // Пропускаем IP (до первого пробела)
+    while (*p && !isspace((unsigned char)*p)) p++;
+    if (!*p) return 0;
+    
+    // Пропускаем пробелы
+    while (*p && isspace((unsigned char)*p)) p++;
+    
+    // Пропускаем идентификатор пользователя (может быть "-" или "admin" или любое другое значение)
+    while (*p && !isspace((unsigned char)*p)) p++;
+    if (!*p) return 0;
+    
+    // Пропускаем пробелы
+    while (*p && isspace((unsigned char)*p)) p++;
+    
+    // Пропускаем аутентификацию (может быть "-" или "admin" или любое другое значение)
+    while (*p && !isspace((unsigned char)*p)) p++;
+    if (!*p) return 0;
+    
+    // Пропускаем пробелы до даты
+    while (*p && isspace((unsigned char)*p)) p++;
+    
+    // Пропускаем дату в квадратных скобках
+    if (*p != '[') return 0;
+    p = strchr(p, ']');
     if (!p) return 0;
+    p++;
     
-    // Пропускаем два дефиса
-    for (int i = 0; i < 2; i++) {
-        while (*p && isspace((unsigned char)*p)) p++;
-        if (*p == '-') p++;
-        else return 0;
-    }
-    
-    // Пропускаем дату
+    // Пропускаем пробелы до запроса
     while (*p && isspace((unsigned char)*p)) p++;
-    if (*p == '[') {
-        p = strchr(p, ']');
-        if (!p) return 0;
-        p++;
-    }
     
-    // Ищем запрос в кавычках
-    while (*p && isspace((unsigned char)*p)) p++;
+    // Проверяем, что начинается запрос в кавычках
     if (*p != '"') return 0;
     p++;
     
-    // Пропускаем метод
+    // Пропускаем метод HTTP (GET, POST и т.д.)
     while (*p && !isspace((unsigned char)*p)) p++;
+    if (!*p) return 0;
+    
+    // Пропускаем пробелы до URL
     while (*p && isspace((unsigned char)*p)) p++;
     
     // Извлекаем URL
     char* url_start = p;
-    while (*p && !isspace((unsigned char)*p)) p++;
+    while (*p && !isspace((unsigned char)*p) && *p != '"') p++;
     if (p == url_start) return 0;
     
     size_t url_len = p - url_start;
@@ -305,22 +318,35 @@ int parse_log_line(char* line, char** url, long long* bytes, char** referer) {
     strncpy(*url, url_start, url_len);
     (*url)[url_len] = '\0';
     
-    // Пропускаем до конца кавычек запроса
+    // Пропускаем до конца запроса (закрывающей кавычки)
     while (*p && *p != '"') p++;
-    if (*p == '"') p++;
+    if (*p != '"') {
+        free(*url);
+        *url = NULL;
+        return 0;
+    }
+    p++; // Пропускаем закрывающую кавычку
     
-    // Код состояния и размер
+    // Пропускаем пробелы до кода состояния
     while (*p && isspace((unsigned char)*p)) p++;
     
-    // Пропускаем код состояния
+    // Пропускаем код состояния (это число)
     while (*p && !isspace((unsigned char)*p)) p++;
+    if (!*p) {
+        free(*url);
+        *url = NULL;
+        return 0;
+    }
+    
+    // Пропускаем пробелы до размера ответа
     while (*p && isspace((unsigned char)*p)) p++;
     
-    // Извлекаем размер
+    // Извлекаем размер ответа
     char* bytes_start = p;
     while (*p && !isspace((unsigned char)*p)) p++;
     if (p == bytes_start) {
         free(*url);
+        *url = NULL;
         return 0;
     }
     
@@ -331,23 +357,48 @@ int parse_log_line(char* line, char** url, long long* bytes, char** referer) {
     bytes_str[bytes_len] = '\0';
     *bytes = atoll(bytes_str);
     
-    // Ищем referer в кавычках
+    // Пропускаем пробелы до referer
     while (*p && isspace((unsigned char)*p)) p++;
-    if (*p == '"') {
-        p++;
-        char* ref_start = p;
-        while (*p && *p != '"') p++;
-        if (*p == '"') {
-            size_t ref_len = p - ref_start;
-            if (ref_len > 0 && strncmp(ref_start, "-", ref_len) != 0) {
-                *referer = malloc(ref_len + 1);
-                if (*referer) {
-                    strncpy(*referer, ref_start, ref_len);
-                    (*referer)[ref_len] = '\0';
-                }
+    
+    // Проверяем, есть ли referer
+    if (*p != '"') {
+        // Нет referer или нестандартный формат
+        *referer = NULL;
+        return 1;
+    }
+    p++;
+    
+    // Извлекаем referer (если он не "-")
+    char* ref_start = p;
+    while (*p && *p != '"') p++;
+    if (*p != '"') {
+        free(*url);
+        *url = NULL;
+        return 0;
+    }
+    
+    size_t ref_len = p - ref_start;
+    if (ref_len > 0) {
+        // Проверяем, не является ли referer просто "-"
+        int is_dash = 1;
+        for (size_t i = 0; i < ref_len; i++) {
+            if (ref_start[i] != '-') {
+                is_dash = 0;
+                break;
             }
-            p++;
         }
+        
+        if (!is_dash) {
+            *referer = malloc(ref_len + 1);
+            if (*referer) {
+                strncpy(*referer, ref_start, ref_len);
+                (*referer)[ref_len] = '\0';
+            }
+        } else {
+            *referer = NULL;
+        }
+    } else {
+        *referer = NULL;
     }
     
     return 1;
@@ -369,6 +420,9 @@ void process_file(const char* filename, ThreadData* data) {
             line[read - 1] = '\0';
         }
         
+        // Пропускаем пустые строки
+        if (read <= 1) continue;
+        
         char* url = NULL;
         char* referer = NULL;
         long long bytes = 0;
@@ -386,9 +440,9 @@ void process_file(const char* filename, ThreadData* data) {
                 free(referer);
             }
         } else {
-            // Отладка: выводим строки, которые не удалось распарсить
+            // Для отладки выводим первые несколько неудачных строк
             static int debug_count = 0;
-            if (debug_count < 10) {
+            if (debug_count < 5) {
                 fprintf(stderr, "Failed to parse line: %s\n", line);
                 debug_count++;
             }
