@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Wpedantic -std=c11 -g -lpthread -lc
+CFLAGS = -Wall -Wextra -Wpedantic -std=c11 -g -lpthread 
 LDFLAGS =
 
 all: parser
