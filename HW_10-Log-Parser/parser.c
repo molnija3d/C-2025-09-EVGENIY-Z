@@ -550,10 +550,9 @@ int main(int argc, char* argv[]) {
     }
     char** files = NULL;
     int file_count = 0;
+    
     file_count = find_files(log_dir, &files);
-    for(int i = 0; i < file_count;i++){
-            printf("Path %d, %s", i, files[i]);
-    }
+
     printf("Found %d log files\n", file_count);
     printf("Using %d threads\n", num_threads);
     printf("Processing all %d files\n", file_count);
