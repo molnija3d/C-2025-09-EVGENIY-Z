@@ -2,6 +2,9 @@
 #define HASH_TABLE_SIZE 2048
 #define PATH_LENGTH 1024
 
+#define SKIP_SPACES(p) while(*(p) && isspace((unsigned char)*(p)))(p)++
+#define SKIP_CHARS(p)  while(*(p) && !isspace((unsigned char)*(p)))(p)++
+
 typedef struct UrlNode {
     char* url;
     long long total_bytes;
