@@ -481,22 +481,7 @@ void* thread_func(void* arg) {
     pthread_exit(NULL);
 }
 
-int main(int argc, char* argv[]) {
-    if (argc != 3) {
-        fprintf(stderr, "Usage: %s <log_directory> <num_threads>\n", argv[0]);
-        return 1;
-    }
-    
-    const char* log_dir = argv[1];
-    int num_threads = atoi(argv[2]);
-    
-    if (num_threads <= 0) {
-        fprintf(stderr, "Number of threads must be positive\n");
-        return 1;
-    }
-    
-    clock_t start_time = clock();
-    
+int find_files(const char* log_dir, char*** files_ptr){
     DIR* dir = opendir(log_dir);
     if (!dir) {
         fprintf(stderr, "Cannot open directory %s: %s\n", log_dir, strerror(errno));
@@ -504,8 +489,8 @@ int main(int argc, char* argv[]) {
     }
     
     struct dirent* entry;
-    char** files = NULL;
     int file_count = 0;
+    char** files = *files_ptr;
     
     while ((entry = readdir(dir)) != NULL) {
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
@@ -518,10 +503,11 @@ int main(int argc, char* argv[]) {
         struct stat st;
         if (stat(path, &st) == 0 && S_ISREG(st.st_mode)) {
             files = realloc(files, (file_count + 1) * sizeof(char*));
+
             if (!files) {
                 fprintf(stderr, "Memory allocation failed\n");
                 closedir(dir);
-                return 1;
+                return -1;
             }
             files[file_count] = strdup(path);
             file_count++;
@@ -540,13 +526,39 @@ int main(int argc, char* argv[]) {
             free(files[i]);
         }
         free(files);
-        
+        *files_ptr=NULL; 
         return 0;
     }
     
+    *files_ptr = files;
+
+    return file_count;
+    
+}
+int main(int argc, char* argv[]) {
+    if (argc != 3) {
+        fprintf(stderr, "Usage: %s <log_directory> <num_threads>\n", argv[0]);
+        return 1;
+    }
+    
+    const char* log_dir = argv[1];
+    int num_threads = atoi(argv[2]);
+    
+    if (num_threads <= 0) {
+        fprintf(stderr, "Number of threads must be positive\n");
+        return 1;
+    }
+    char** files = NULL;
+    int file_count = 0;
+    file_count = find_files(log_dir, &files);
+    for(int i = 0; i < file_count;i++){
+            printf("Path %d, %s", i, files[i]);
+    }
     printf("Found %d log files\n", file_count);
     printf("Using %d threads\n", num_threads);
     printf("Processing all %d files\n", file_count);
+   
+    clock_t start_time = clock();
     
     global_url_table = create_url_table(HASH_TABLE_SIZE * 2);
     global_referer_table = create_referer_table(HASH_TABLE_SIZE * 2);
