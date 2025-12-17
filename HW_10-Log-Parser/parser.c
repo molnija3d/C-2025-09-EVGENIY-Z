@@ -1,6 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
 #define _GNU_SOURCE
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,48 +10,15 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <time.h>
-
-#define TOP_N 10
-#define HASH_TABLE_SIZE 2048
-
-typedef struct UrlNode {
-    char* url;
-    long long total_bytes;
-    struct UrlNode* next;
-} UrlNode;
-
-typedef struct {
-    UrlNode** buckets;
-    int size;
-} UrlHashTable;
-
-typedef struct RefererNode {
-    char* referer;
-    int count;
-    struct RefererNode* next;
-} RefererNode;
-
-typedef struct {
-    RefererNode** buckets;
-    int size;
-} RefererHashTable;
-
-typedef struct {
-    char** files;
-    int* next_file_index;
-    int total_files;
-    pthread_mutex_t* file_mutex;
-    
-    UrlHashTable* url_table;
-    RefererHashTable* referer_table;
-    long long thread_total_bytes;
-} ThreadData;
+#include "parser.h"
 
 long long total_bytes = 0;
 UrlHashTable* global_url_table = NULL;
 RefererHashTable* global_referer_table = NULL;
 pthread_mutex_t stats_mutex = PTHREAD_MUTEX_INITIALIZER;
-
+/*
+ * Calculate hash of the string
+ */
 static inline unsigned long hash_string(const char* str) {
     unsigned long hash = 5381;
     unsigned char c;
@@ -63,7 +29,9 @@ static inline unsigned long hash_string(const char* str) {
     
     return hash;
 }
-
+/*
+ * Creating hash table for url
+ */
 UrlHashTable* create_url_table(int size) {
     UrlHashTable* table = malloc(sizeof(UrlHashTable));
     if (!table) return NULL;
@@ -77,7 +45,9 @@ UrlHashTable* create_url_table(int size) {
     
     return table;
 }
-
+/*
+ * Creating hash table for referer
+ */
 RefererHashTable* create_referer_table(int size) {
     RefererHashTable* table = malloc(sizeof(RefererHashTable));
     if (!table) return NULL;
@@ -92,6 +62,9 @@ RefererHashTable* create_referer_table(int size) {
     return table;
 }
 
+/*
+ * Update url table from thread
+ */
 static inline void update_url_table(UrlHashTable* table, const char* url, long long bytes) {
     if (!url || !url[0]) return;
     
@@ -115,6 +88,9 @@ static inline void update_url_table(UrlHashTable* table, const char* url, long l
     table->buckets[hash] = new_node;
 }
 
+/*
+ * Update referer data from thread
+ */
 static inline void update_referer_table(RefererHashTable* table, const char* referer) {
     if (!referer || !referer[0] || strcmp(referer, "-") == 0) return;
     
@@ -138,6 +114,9 @@ static inline void update_referer_table(RefererHashTable* table, const char* ref
     table->buckets[hash] = new_node;
 }
 
+/*
+ * Merge one url table with another
+ */
 void merge_url_tables(UrlHashTable* src, UrlHashTable* dst) {
     for (int i = 0; i < src->size; i++) {
         UrlNode* current = src->buckets[i];
@@ -148,6 +127,9 @@ void merge_url_tables(UrlHashTable* src, UrlHashTable* dst) {
     }
 }
 
+/*
+ * Merge one referer table with another
+ */
 void merge_referer_tables(RefererHashTable* src, RefererHashTable* dst) {
     for (int i = 0; i < src->size; i++) {
         RefererNode* current = src->buckets[i];
@@ -160,6 +142,9 @@ void merge_referer_tables(RefererHashTable* src, RefererHashTable* dst) {
     }
 }
 
+/*
+ * free url table after usage
+ */
 void free_url_table(UrlHashTable* table) {
     if (!table) return;
     
@@ -177,6 +162,9 @@ void free_url_table(UrlHashTable* table) {
     free(table);
 }
 
+/*
+ * free referer table after usage
+ */
 void free_referer_table(RefererHashTable* table) {
     if (!table) return;
     
@@ -194,6 +182,9 @@ void free_referer_table(RefererHashTable* table) {
     free(table);
 }
 
+/*
+ * To sort results fast  we need to convert table to array array of pointers
+ */
 UrlNode** url_table_to_array(UrlHashTable* table, int* count) {
     *count = 0;
     for (int i = 0; i < table->size; i++) {
@@ -219,6 +210,9 @@ UrlNode** url_table_to_array(UrlHashTable* table, int* count) {
     return array;
 }
 
+/*
+ * To sort results fast  we need to convert table to array of pointers
+ */
 RefererNode** referer_table_to_array(RefererHashTable* table, int* count) {
     *count = 0;
     for (int i = 0; i < table->size; i++) {
@@ -244,6 +238,9 @@ RefererNode** referer_table_to_array(RefererHashTable* table, int* count) {
     return array;
 }
 
+/*
+ * a function to compare urls with qsort
+ */
 int compare_urls(const void* a, const void* b) {
     const UrlNode* u1 = *(const UrlNode**)a;
     const UrlNode* u2 = *(const UrlNode**)b;
@@ -253,6 +250,9 @@ int compare_urls(const void* a, const void* b) {
     return 0;
 }
 
+/*
+ * a function to compare urls with qsort
+ */
 int compare_referers(const void* a, const void* b) {
     const RefererNode* r1 = *(const RefererNode**)a;
     const RefererNode* r2 = *(const RefererNode**)b;
@@ -262,52 +262,42 @@ int compare_referers(const void* a, const void* b) {
     return 0;
 }
 
-// Улучшенный парсер, который обрабатывает разные форматы логов
+/*
+ * function to parse a one log line
+ */
 int parse_log_line(char* line, char** url, long long* bytes, char** referer) {
     char* p = line;
     
-    // Пропускаем IP (до первого пробела)
     while (*p && !isspace((unsigned char)*p)) p++;
     if (!*p) return 0;
     
-    // Пропускаем пробелы
     while (*p && isspace((unsigned char)*p)) p++;
     
-    // Пропускаем идентификатор пользователя (может быть "-" или "admin" или любое другое значение)
     while (*p && !isspace((unsigned char)*p)) p++;
     if (!*p) return 0;
     
-    // Пропускаем пробелы
     while (*p && isspace((unsigned char)*p)) p++;
     
-    // Пропускаем аутентификацию (может быть "-" или "admin" или любое другое значение)
     while (*p && !isspace((unsigned char)*p)) p++;
     if (!*p) return 0;
     
-    // Пропускаем пробелы до даты
     while (*p && isspace((unsigned char)*p)) p++;
     
-    // Пропускаем дату в квадратных скобках
     if (*p != '[') return 0;
     p = strchr(p, ']');
     if (!p) return 0;
     p++;
     
-    // Пропускаем пробелы до запроса
     while (*p && isspace((unsigned char)*p)) p++;
     
-    // Проверяем, что начинается запрос в кавычках
     if (*p != '"') return 0;
     p++;
     
-    // Пропускаем метод HTTP (GET, POST и т.д.)
     while (*p && !isspace((unsigned char)*p)) p++;
     if (!*p) return 0;
     
-    // Пропускаем пробелы до URL
     while (*p && isspace((unsigned char)*p)) p++;
     
-    // Извлекаем URL
     char* url_start = p;
     while (*p && !isspace((unsigned char)*p) && *p != '"') p++;
     if (p == url_start) return 0;
@@ -318,19 +308,16 @@ int parse_log_line(char* line, char** url, long long* bytes, char** referer) {
     strncpy(*url, url_start, url_len);
     (*url)[url_len] = '\0';
     
-    // Пропускаем до конца запроса (закрывающей кавычки)
     while (*p && *p != '"') p++;
     if (*p != '"') {
         free(*url);
         *url = NULL;
         return 0;
     }
-    p++; // Пропускаем закрывающую кавычку
+    p++; 
     
-    // Пропускаем пробелы до кода состояния
     while (*p && isspace((unsigned char)*p)) p++;
     
-    // Пропускаем код состояния (это число)
     while (*p && !isspace((unsigned char)*p)) p++;
     if (!*p) {
         free(*url);
@@ -338,10 +325,8 @@ int parse_log_line(char* line, char** url, long long* bytes, char** referer) {
         return 0;
     }
     
-    // Пропускаем пробелы до размера ответа
     while (*p && isspace((unsigned char)*p)) p++;
     
-    // Извлекаем размер ответа
     char* bytes_start = p;
     while (*p && !isspace((unsigned char)*p)) p++;
     if (p == bytes_start) {
@@ -357,18 +342,14 @@ int parse_log_line(char* line, char** url, long long* bytes, char** referer) {
     bytes_str[bytes_len] = '\0';
     *bytes = atoll(bytes_str);
     
-    // Пропускаем пробелы до referer
     while (*p && isspace((unsigned char)*p)) p++;
     
-    // Проверяем, есть ли referer
     if (*p != '"') {
-        // Нет referer или нестандартный формат
         *referer = NULL;
         return 1;
     }
     p++;
     
-    // Извлекаем referer (если он не "-")
     char* ref_start = p;
     while (*p && *p != '"') p++;
     if (*p != '"') {
@@ -379,7 +360,6 @@ int parse_log_line(char* line, char** url, long long* bytes, char** referer) {
     
     size_t ref_len = p - ref_start;
     if (ref_len > 0) {
-        // Проверяем, не является ли referer просто "-"
         int is_dash = 1;
         for (size_t i = 0; i < ref_len; i++) {
             if (ref_start[i] != '-') {
@@ -404,6 +384,9 @@ int parse_log_line(char* line, char** url, long long* bytes, char** referer) {
     return 1;
 }
 
+/*
+ * Processing whole file
+ */
 void process_file(const char* filename, ThreadData* data) {
     FILE* file = fopen(filename, "r");
     if (!file) {
@@ -420,7 +403,6 @@ void process_file(const char* filename, ThreadData* data) {
             line[read - 1] = '\0';
         }
         
-        // Пропускаем пустые строки
         if (read <= 1) continue;
         
         char* url = NULL;
@@ -440,7 +422,6 @@ void process_file(const char* filename, ThreadData* data) {
                 free(referer);
             }
         } else {
-            // Для отладки выводим первые несколько неудачных строк
             static int debug_count = 0;
             if (debug_count < 5) {
                 fprintf(stderr, "Failed to parse line: %s\n", line);
@@ -453,6 +434,9 @@ void process_file(const char* filename, ThreadData* data) {
     fclose(file);
 }
 
+/*
+ * Thread function. There is a one thread for one file. If there is not anough files, then thread exit.
+ */
 void* thread_func(void* arg) {
     ThreadData* data = (ThreadData*)arg;
     
@@ -466,24 +450,29 @@ void* thread_func(void* arg) {
     }
     
     while (1) {
+         /* locking a mutex to get access to file counter (index) */
         pthread_mutex_lock(data->file_mutex);
         int file_index = *(data->next_file_index);
         if (file_index < data->total_files) {
+            /* udating index*/
             *(data->next_file_index) = file_index + 1;
             char* filename = data->files[file_index];
+            /* now other process can use mutex and change counter */
             pthread_mutex_unlock(data->file_mutex);
             
             process_file(filename, data);
         } else {
+            /* if there is no any files awailable */
             pthread_mutex_unlock(data->file_mutex);
             break;
         }
     }
-    
+    /* to merge global table with local we need to use mutex */
     pthread_mutex_lock(&stats_mutex);
     total_bytes += data->thread_total_bytes;
     merge_url_tables(data->url_table, global_url_table);
     merge_referer_tables(data->referer_table, global_referer_table);
+    /* merging complete, unlock mutex to allow other processes handle it*/
     pthread_mutex_unlock(&stats_mutex);
     
     free_url_table(data->url_table);
@@ -523,7 +512,7 @@ int main(int argc, char* argv[]) {
             continue;
         }
         
-        char path[1024];
+        char path[PATH_LENGTH];
         snprintf(path, sizeof(path), "%s/%s", log_dir, entry->d_name);
         
         struct stat st;
@@ -603,12 +592,15 @@ int main(int argc, char* argv[]) {
     
     clock_t parse_end_time = clock();
     
+    /* creating an array from table of urls to sort*/
     int url_count = 0;
     UrlNode** url_array = url_table_to_array(global_url_table, &url_count);
     
+    /* creating an array from table of referers to sort*/
     int referer_count = 0;
     RefererNode** referer_array = referer_table_to_array(global_referer_table, &referer_count);
     
+    /* sorting arrays*/
     if (url_array) {
         qsort(url_array, url_count, sizeof(UrlNode*), compare_urls);
     }
@@ -619,11 +611,13 @@ int main(int argc, char* argv[]) {
     
     clock_t sort_end_time = clock();
     
+    /*printing results*/
     printf("\n=== LOG ANALYSIS RESULTS ===\n\n");
     printf("Total bytes served: %lld\n\n", total_bytes);
     
     printf("Top %d URLs by traffic:\n", TOP_N);
     printf("-------------------------\n");
+
     for (int i = 0; i < TOP_N && i < url_count; i++) {
         printf("%d. %s - %lld bytes\n", i + 1, url_array[i]->url, url_array[i]->total_bytes);
     }
@@ -651,6 +645,7 @@ int main(int argc, char* argv[]) {
     printf("Total time: %.3f seconds\n", total_time);
     printf("Processed %d files with %d threads\n", file_count, num_threads);
     
+    /* free memory and destory mutex */
     for (int i = 0; i < file_count; i++) {
         free(files[i]);
     }
