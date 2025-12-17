@@ -340,21 +340,13 @@ int parse_log_line(char* line, char** url, long long* bytes, char** referer) {
     /* SKIP_CHARS(p);*/
     p = skip_chars(p);
 
-    /* if there is no size bytes, there is a error in this line. free URL and return. */
-    /*
-         if (p == bytes_start) {
-            free(*url);
-            *url = NULL;
-            return 0;
-        }
-      */
     char bytes_str[32];
     size_t bytes_len = p - bytes_start;
     if (bytes_len >= sizeof(bytes_str)) bytes_len = sizeof(bytes_str) - 1;
     strncpy(bytes_str, bytes_start, bytes_len);
     bytes_str[bytes_len] = '\0';
     *bytes = atoll(bytes_str);
-    //SKIP_SPACES(p);
+    /*SKIP_SPACES(p);*/
     p = skip_spaces(p);
 
     if ('"' != *p ) {
