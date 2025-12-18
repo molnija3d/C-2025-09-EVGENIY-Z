@@ -20,7 +20,7 @@ pthread_mutex_t stats_mutex = PTHREAD_MUTEX_INITIALIZER;
  * Calculate hash of the string
  */
 static inline unsigned long hash_string(const char* str) {
-    unsigned long hash = 5381;
+    unsigned long hash = HASH_BASE;
     unsigned char c;
 
     while ((c = (unsigned char)*str++)) {
