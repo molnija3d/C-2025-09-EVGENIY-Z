@@ -2,6 +2,7 @@
 #define HASH_TABLE_SIZE 2048
 #define PATH_LENGTH 1024
 #define HASH_BASE 5381
+#define BYTES_LEN 32
 
 #define SKIP_SPACES(p) while(*(p) && isspace((unsigned char)*(p))){(p)++;}
 #define SKIP_CHARS(p)  while(*(p) && !isspace((unsigned char)*(p))){(p)++;}

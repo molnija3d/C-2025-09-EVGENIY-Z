@@ -340,7 +340,7 @@ int parse_log_line(char* line, char** url, long long* bytes, char** referer) {
     /* SKIP_CHARS(p);*/
     p = skip_chars(p);
 
-    char bytes_str[32];
+    char bytes_str[BYTES_LEN];
     size_t bytes_len = p - bytes_start;
     if (bytes_len >= sizeof(bytes_str)) bytes_len = sizeof(bytes_str) - 1;
     strncpy(bytes_str, bytes_start, bytes_len);
