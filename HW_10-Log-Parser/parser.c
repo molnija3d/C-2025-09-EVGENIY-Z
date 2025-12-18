@@ -404,7 +404,7 @@ void process_file(const char* filename, ThreadData* data) {
     ssize_t read;
 
     while ((read = getline(&line, &len, file)) != -1) {
-        if (read > 0 && line[read - 1] == '\n') {
+        if (0 < read && line[read - 1] == '\n') {
             line[read - 1] = '\0';
         }
 
@@ -643,7 +643,7 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < TOP_N && i < url_count; i++) {
         printf("%d. %s - %lld bytes\n", i + 1, url_array[i]->url, url_array[i]->total_bytes);
     }
-    if (url_count == 0) {
+    if (0 == url_count) {
         printf("(no URLs found)\n");
     }
     printf("\n");
@@ -653,7 +653,7 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < TOP_N && i < referer_count; i++) {
         printf("%d. %s - %d requests\n", i + 1, referer_array[i]->referer, referer_array[i]->count);
     }
-    if (referer_count == 0) {
+    if (0 == referer_count) {
         printf("(no referers found)\n");
     }
 
