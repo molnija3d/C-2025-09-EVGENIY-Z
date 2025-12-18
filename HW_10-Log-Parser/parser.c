@@ -322,7 +322,7 @@ int parse_log_line(char* line, char** url, long long* bytes, char** referer) {
     (*url)[url_len] = '\0';
 
     /* if there is no tailing '"' free URL*/
-    while (*p && *p != '"') p++;
+    while (*p && '"' != *p) p++;
     if ('"' != *p) {
         free(*url);
         *url = NULL;
