@@ -428,7 +428,7 @@ void process_file(const char* filename, ThreadData* data) {
             }
         } else {
             static int debug_count = 0;
-            if (5 > debug_count) {
+            if (DEBUG_COUNT > debug_count) {
                 fprintf(stderr, "Failed to parse line: %s\n", line);
                 debug_count++;
             }
