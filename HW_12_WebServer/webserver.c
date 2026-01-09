@@ -165,7 +165,7 @@ static int generate_file_list(const char* dir_path, char* output, size_t max_siz
 
     /* Запись каждого элемента директории */
     while ((entry = readdir(dir)) != NULL) {
-         /* Пропускаем . и .. */
+        /* Пропускаем . и .. */
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
             continue;
         }
@@ -251,8 +251,8 @@ static void send_http_response(int client_fd, int status_code, const char* statu
 
     /* если есть content_type, добавляем */
     if (content_type) {
-        header_len += snprintf(header + header_len, sizeof(header) - header_len, 
-                              "Content-Type: %s\r\n", content_type);
+        header_len += snprintf(header + header_len, sizeof(header) - header_len,
+                               "Content-Type: %s\r\n", content_type);
     }
 
     /* добавляем пустую строку */
@@ -271,7 +271,7 @@ static void send_http_response(int client_fd, int status_code, const char* statu
 static int set_nonblocking(int fd) {
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1) {
-            return -1;
+        return -1;
     }
     return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
@@ -330,7 +330,7 @@ static void handle_http_request(int client_fd, const char* request, const char* 
     }
 
     /* Если это директория - показываем список файлов */
-    if (S_ISDIR(file_stat.st_mode)) { 
+    if (S_ISDIR(file_stat.st_mode)) {
         /* для списка файлов */
         char* html_content = malloc(MAX_HTML_LEN);
         if (!html_content) {
@@ -366,12 +366,12 @@ static void handle_http_request(int client_fd, const char* request, const char* 
 
     /* поределяем mime-type для файла*/
     const char* mime_type = get_mime_type(file_path);
-    
+
     /* Заполняем структуру времени */
     time_t now = time(NULL);
     struct tm* tm_info = gmtime(&now);
     char date_buf[64];
-    
+
     /* Конвертируем время в строку */
     strftime(date_buf, sizeof(date_buf), "%a, %d %b %Y %H:%M:%S GMT", tm_info);
 
@@ -403,6 +403,7 @@ static void handle_http_request(int client_fd, const char* request, const char* 
             break;
         }
     }
+
 
     close(file_fd);
 }
@@ -611,6 +612,8 @@ int main(int argc, char* argv[]) {
 
                                 /* Закрываем соединение после отправки ответа */
                                 epoll_ctl(epoll_fd, EPOLL_CTL_DEL, client_data->fd, NULL);
+
+                                shutdown(client_data->fd, SHUT_WR);
                                 close(client_data->fd);
                                 free(client_data);
                                 break;
