@@ -24,6 +24,6 @@ solution: main.c
 	$(CC) $^ -o $@ $(CFLAGS) $(LDFLAGS)
 
 clean:
-	rm -f solution* asm-prog* optimised* core
+	rm -f solution* asm-prog* asm-optimised core *.o
 
 .PHONY: all clean
