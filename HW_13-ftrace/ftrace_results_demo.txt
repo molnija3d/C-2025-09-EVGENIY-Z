@@ -1,0 +1,34 @@
+# tracer: function
+#
+# entries-in-buffer/entries-written: 22/22   #P:8
+#
+#                                _-----=> irqs-off/BH-disabled
+#                               / _----=> need-resched
+#                              | / _---=> hardirq/softirq
+#                              || / _--=> preempt-depth
+#                              ||| / _-=> migrate-disable
+#                              |||| /     delay
+#           TASK-PID     CPU#  |||||  TIMESTAMP  FUNCTION
+#              | |         |   |||||     |         |
+     ftrace_demo-5178    [000] ..... 56536.037197: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037293: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037299: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037309: __x64_sys_openat <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037371: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037376: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037384: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037404: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037408: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037414: __x64_sys_newfstat <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037420: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037424: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037428: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037432: __x64_sys_close <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037437: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037440: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037445: __x64_sys_unlink <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037475: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037479: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037482: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037486: __x64_sys_write <-do_syscall_64
+     ftrace_demo-5178    [000] ..... 56536.037496: __x64_sys_exit_group <-x64_sys_call

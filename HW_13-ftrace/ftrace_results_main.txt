@@ -1,0 +1,30 @@
+# tracer: function
+#
+# entries-in-buffer/entries-written: 18/18   #P:8
+#
+#                                _-----=> irqs-off/BH-disabled
+#                               / _----=> need-resched
+#                              | / _---=> hardirq/softirq
+#                              || / _--=> preempt-depth
+#                              ||| / _-=> migrate-disable
+#                              |||| /     delay
+#           TASK-PID     CPU#  |||||  TIMESTAMP  FUNCTION
+#              | |         |   |||||     |         |
+            main-5154    [006] ..... 56475.703762: __x64_sys_write <-do_syscall_64
+            main-5154    [006] ..... 56475.703847: __x64_sys_openat <-do_syscall_64
+            main-5154    [006] ..... 56475.704875: __x64_sys_write <-do_syscall_64
+            main-5154    [006] ..... 56475.704894: __x64_sys_close <-do_syscall_64
+            main-5154    [006] ..... 56475.704902: __x64_sys_newfstatat <-do_syscall_64
+            main-5154    [006] ..... 56475.704913: __x64_sys_rt_sigprocmask <-do_syscall_64
+            main-5154    [006] ..... 56475.704915: __x64_sys_clone <-do_syscall_64
+            main-5154    [006] ..... 56475.705539: __x64_sys_rt_sigprocmask <-do_syscall_64
+            main-5154    [006] ..... 56475.705562: __x64_sys_wait4 <-do_syscall_64
+            main-5154    [006] ..... 56475.706502: __x64_sys_write <-do_syscall_64
+            main-5154    [006] ..... 56475.706564: __x64_sys_write <-do_syscall_64
+            main-5154    [006] ..... 56475.706569: __x64_sys_write <-do_syscall_64
+            main-5154    [006] ..... 56475.706571: __x64_sys_read <-do_syscall_64
+            main-5154    [006] ..... 56477.375936: __x64_sys_write <-do_syscall_64
+            main-5154    [006] ..... 56477.376029: __x64_sys_unlink <-do_syscall_64
+            main-5154    [006] ..... 56477.376098: __x64_sys_write <-do_syscall_64
+            main-5154    [006] ..... 56477.376164: __x64_sys_write <-do_syscall_64
+            main-5154    [006] ..... 56477.376192: __x64_sys_exit_group <-x64_sys_call
