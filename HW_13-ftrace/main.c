@@ -7,10 +7,14 @@
 #include <string.h>
 
 int main() {
+    char buffer[100];
     printf("=== Демонстрация системных вызовов ===\n");
+    printf("Мой PID: %d\n", getpid());    
+    printf("Нажмите ENTER\r\n");
+    read(STDIN_FILENO, buffer, sizeof(buffer) - 1);
     
     // 1. write - вывод в консоль
-    write(STDOUT_FILENO, "1. Системный вызов write()\n", 27);
+    write(STDOUT_FILENO, "1. Системный вызов write()\n", sizeof("1. Системный вызов write()\n"));
     
     // 2. open + close - работа с файлом
     int fd = open("test_file.txt", O_CREAT | O_WRONLY | O_TRUNC, 0644);
@@ -41,7 +45,6 @@ int main() {
     printf("5. PID процесса: %d, PPID: %d\n", getpid(), getppid());
     
     // 6. read - чтение с stdin
-    char buffer[100];
     printf("Введите текст для демонстрации read(): ");
     fflush(stdout);
     read(STDIN_FILENO, buffer, sizeof(buffer) - 1);
