@@ -11,10 +11,10 @@ fi
 
 # Извлекаем строки с INSERT
 grep -i "^INSERT INTO oscar VALUES" "$input_file" | while IFS= read -r line; do
-    # Удаляем "INSERT INTO oscar VALUES(" в начале и ");" в конце
+    # Удаляем "INSERT INTO oscar VALUES
     values=$(echo "$line" | sed -e "s/^INSERT INTO oscar VALUES(//" -e "s/);$//")
     
-    # Разделяем по запятой (безопасно, т.к. внутри строк нет запятых)
+    # Разделяем по запятой 
     IFS=',' read -r id year age name movie <<< "$values"
     
     # Удаляем окружающие одинарные кавычки и заменяем '' на '
