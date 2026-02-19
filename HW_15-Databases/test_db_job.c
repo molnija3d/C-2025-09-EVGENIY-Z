@@ -264,7 +264,6 @@ static int process_mongodb(const char *conn_string, const char *db_name,
                 }
                 fprintf(stderr, "Ошибка: обнаружено нечисловое значение в поле '%s' (тип: %s)\n",
                         field_name, type_name);
-                // ... очистка и выход ...
             }
 
             if (is_number) {
