@@ -1,10 +1,12 @@
 #include <GL/glut.h>
 #include <stdlib.h>
 #include <math.h>
+#include <stdio.h>
 
-//#define STB_IMAGE_IMPLEMENTATION
-//#include "stb_image.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
+#define TEX_FILE "texture.bmp"
 
 /* Глобальная переменная для угла поворота куба */
 static float angle = 0.0f;
@@ -38,7 +40,7 @@ GLuint createCheckerboardTexture() {
 }
 
 /* Загрузка текстуры из файла */
-/*
+
 GLuint loadTextureFromFile(const char *filename) {
     GLuint texture;
     int width, height, channels;
@@ -66,7 +68,7 @@ GLuint loadTextureFromFile(const char *filename) {
     stbi_image_free(data);  // освобождаем память изображения
     return texture;
 }
-*/
+
 /* Инициализация OpenGL */
 void initOpenGL() {
     glEnable(GL_DEPTH_TEST);
@@ -75,7 +77,7 @@ void initOpenGL() {
     glEnable(GL_TEXTURE_2D);
 
     /* Параметры источника света */
-    GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
+    GLfloat light_position[] = { 1.0, 0.0, 1.0, 0.0 };
     GLfloat white_light[] = { 1.0, 1.0, 1.0, 1.0 };
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, white_light);
@@ -85,7 +87,9 @@ void initOpenGL() {
     glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
 
     /* Создаём текстуру и делаем её текущей */
-    GLuint tex = createCheckerboardTexture();
+    /* GLuint tex = createCheckerboardTexture(); */
+    /* Загружаем текстуру из файла  */
+    GLuint tex = loadTextureFromFile(TEX_FILE);
     glBindTexture(GL_TEXTURE_2D, tex);
 
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
@@ -101,7 +105,7 @@ void display() {
               0.0, 0.0, 0.0,   /* точка, на которую смотрим */
               0.0, 1.0, 0.0);  /* направление "вверх" */
 
-    glRotatef(angle, 1.0, 1.0, 0.0); /* вращение вокруг оси (1,1,0) */
+    glRotatef(angle, 0.7, 0.5, 0.0); /* вращение вокруг оси (1,1,0) */
 
     /* Рисуем куб (шесть граней) */
     glBegin(GL_QUADS);
@@ -178,7 +182,7 @@ int main(int argc, char **argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(800, 600);
-    glutCreateWindow("Вращающийся куб с текстурой");
+    glutCreateWindow("Вращающийся куб с текстурой. ESC для выхода.");
 
     initOpenGL();
 
