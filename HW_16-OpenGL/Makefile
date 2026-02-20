@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS += -Wall -Wextra -Wpedantic -std=c11 -g 
-LDFLAGS += -lglut -lGLU -lGL
+LDFLAGS += -lglut -lGLU -lGL -lm
 
 all: cube
 
