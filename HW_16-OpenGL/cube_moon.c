@@ -20,7 +20,7 @@ static GLuint texCube, texSphere;   // идентификаторы тексту
 const float ORBIT_RADIUS = 2.0f;
 const float ORBIT_SPEED = 0.02f;     // прирост угла за кадр
 const float SPHERE_ROT_SPEED = 0.5f; // скорость вращения сферы
-//
+
 /* Создание текстуры "шахматная доска" */
 GLuint createCheckerboardTexture() {
     GLuint texture;
@@ -50,7 +50,6 @@ GLuint createCheckerboardTexture() {
 }
 
 /* Загрузка текстуры из файла */
-
 GLuint loadTextureFromFile(const char *filename) {
     GLuint texture;
     int width, height, channels;
@@ -60,22 +59,22 @@ GLuint loadTextureFromFile(const char *filename) {
         return 0;
     }
 
-    // Определяем формат пикселей (RGB или RGBA)
+    /* Определяем формат пикселей (RGB или RGBA) */
     GLenum format = (channels == 4) ? GL_RGBA : GL_RGB;
 
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    // Загружаем данные в OpenGL
+    /* Загружаем данные в OpenGL */
     glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 
-    // Устанавливаем параметры фильтрации и повторения
+    /* Устанавливаем параметры фильтрации и повторения */
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    stbi_image_free(data);  // освобождаем память изображения
+    stbi_image_free(data);  /* Освобождаем память изображения */
     return texture;
 }
 
@@ -107,66 +106,73 @@ void initOpenGL() {
 void drawCube() {
     glBindTexture(GL_TEXTURE_2D, texCube);
     glBegin(GL_QUADS);
-    // Передняя грань
-    glNormal3f(0,0,1);
-    glTexCoord2f(0,0);
-    glVertex3f(-0.5,-0.5,0.5);
-    glTexCoord2f(1,0);
-    glVertex3f(0.5,-0.5,0.5);
-    glTexCoord2f(1,1);
-    glVertex3f(0.5,0.5,0.5);
-    glTexCoord2f(0,1);
-    glVertex3f(-0.5,0.5,0.5);
-    // Задняя грань
-    glNormal3f(0,0,-1);
-    glTexCoord2f(0,0);
-    glVertex3f(-0.5,-0.5,-0.5);
-    glTexCoord2f(1,0);
-    glVertex3f(-0.5,0.5,-0.5);
-    glTexCoord2f(1,1);
-    glVertex3f(0.5,0.5,-0.5);
-    glTexCoord2f(0,1);
-    glVertex3f(0.5,-0.5,-0.5);
-    // Левая грань
-    glNormal3f(-1,0,0);
-    glTexCoord2f(0,0);
-    glVertex3f(-0.5,-0.5,-0.5);
-    glTexCoord2f(1,0);
-    glVertex3f(-0.5,-0.5,0.5);
-    glTexCoord2f(1,1);
-    glVertex3f(-0.5,0.5,0.5);
-    glTexCoord2f(0,1);
-    glVertex3f(-0.5,0.5,-0.5);
-    // Правая грань
-    glNormal3f(1,0,0);
-    glTexCoord2f(0,0);
-    glVertex3f(0.5,-0.5,-0.5);
-    glTexCoord2f(1,0);
-    glVertex3f(0.5,0.5,-0.5);
-    glTexCoord2f(1,1);
-    glVertex3f(0.5,0.5,0.5);
-    glTexCoord2f(0,1);
-    glVertex3f(0.5,-0.5,0.5);
-    // Нижняя грань
-    glNormal3f(0,-1,0);
-    glTexCoord2f(0,0);
-    glVertex3f(-0.5,-0.5,-0.5);
-    glTexCoord2f(1,0);
-    glVertex3f(0.5,-0.5,-0.5);
-    glTexCoord2f(1,1);
-    glVertex3f(0.5,-0.5,0.5);
-    glTexCoord2f(0,1);
-    glVertex3f(-0.5,-0.5,0.5);
-    // Верхняя грань
-    glNormal3f(0,1,0);
-    glTexCoord2f(0,0);
-    glVertex3f(-0.5,0.5,-0.5);
-    glTexCoord2f(1,0);
-    glVertex3f(-0.5,0.5,0.5);
-    glTexCoord2f(1,1);
-    glVertex3f(0.5,0.5,0.5);
-    glTexCoord2f(0,1);
-    glVertex3f(0.5,0.5,-0.5);
+    {
+        /* Передняя грань */
+        glNormal3f(0,0,1);
+        glTexCoord2f(0,0);
+        glVertex3f(-0.5,-0.5,0.5);
+        glTexCoord2f(1,0);
+        glVertex3f(0.5,-0.5,0.5);
+        glTexCoord2f(1,1);
+        glVertex3f(0.5,0.5,0.5);
+        glTexCoord2f(0,1);
+        glVertex3f(-0.5,0.5,0.5);
+
+        /* Задняя грань */
+        glNormal3f(0,0,-1);
+        glTexCoord2f(0,0);
+        glVertex3f(-0.5,-0.5,-0.5);
+        glTexCoord2f(1,0);
+        glVertex3f(-0.5,0.5,-0.5);
+        glTexCoord2f(1,1);
+        glVertex3f(0.5,0.5,-0.5);
+        glTexCoord2f(0,1);
+        glVertex3f(0.5,-0.5,-0.5);
+
+        /* Левая грань */
+        glNormal3f(-1,0,0);
+        glTexCoord2f(0,0);
+        glVertex3f(-0.5,-0.5,-0.5);
+        glTexCoord2f(1,0);
+        glVertex3f(-0.5,-0.5,0.5);
+        glTexCoord2f(1,1);
+        glVertex3f(-0.5,0.5,0.5);
+        glTexCoord2f(0,1);
+        glVertex3f(-0.5,0.5,-0.5);
+
+        /* Правая грань*/
+        glNormal3f(1,0,0);
+        glTexCoord2f(0,0);
+        glVertex3f(0.5,-0.5,-0.5);
+        glTexCoord2f(1,0);
+        glVertex3f(0.5,0.5,-0.5);
+        glTexCoord2f(1,1);
+        glVertex3f(0.5,0.5,0.5);
+        glTexCoord2f(0,1);
+        glVertex3f(0.5,-0.5,0.5);
+
+        /* Нижняя грань */
+        glNormal3f(0,-1,0);
+        glTexCoord2f(0,0);
+        glVertex3f(-0.5,-0.5,-0.5);
+        glTexCoord2f(1,0);
+        glVertex3f(0.5,-0.5,-0.5);
+        glTexCoord2f(1,1);
+        glVertex3f(0.5,-0.5,0.5);
+        glTexCoord2f(0,1);
+        glVertex3f(-0.5,-0.5,0.5);
+
+        /* Верхняя грань */
+        glNormal3f(0,1,0);
+        glTexCoord2f(0,0);
+        glVertex3f(-0.5,0.5,-0.5);
+        glTexCoord2f(1,0);
+        glVertex3f(-0.5,0.5,0.5);
+        glTexCoord2f(1,1);
+        glVertex3f(0.5,0.5,0.5);
+        glTexCoord2f(0,1);
+        glVertex3f(0.5,0.5,-0.5);
+    }
     glEnd();
 }
 
@@ -174,9 +180,9 @@ void drawCube() {
 void drawSphere() {
     glBindTexture(GL_TEXTURE_2D, texSphere);
     GLUquadric *quad = gluNewQuadric();
-    gluQuadricTexture(quad, GL_TRUE);   // автоматически генерировать текстурные координаты
-    gluQuadricNormals(quad, GLU_SMOOTH); // сглаженные нормали
-    gluSphere(quad, 0.5, 32, 32);       // радиус 0.5, 32 сегмента по широте и долготе
+    gluQuadricTexture(quad, GL_TRUE);   /* автоматически генерировать текстурные координаты */
+    gluQuadricNormals(quad, GLU_SMOOTH); /* сглаженные нормали */
+    gluSphere(quad, 0.5, 32, 32);       /* радиус 0.5, 32 сегмента по широте и долготе */
     gluDeleteQuadric(quad);
 }
 
@@ -209,25 +215,25 @@ void display() {
               0.0, 1.0, 0.0);  /* направление "вверх" */
 
     /* Рисуем куб (шесть граней) */
-    glPushMatrix();             // сохраняем текущую матрицу (вид)
-    glRotatef(cubeAngle, 1.0, 1.0, 0.0); // вращаем куб
+    glPushMatrix();             /* сохраняем текущую матрицу (вид) */
+    glRotatef(cubeAngle, 1.0, 1.0, 0.0); /* вращаем куб */
     drawCube();
-    glPopMatrix();              // восстанавливаем матрицу
+    glPopMatrix();              /* восстанавливаем матрицу */
 
     /* Рисуем орбиту (белая линия) */
     drawOrbit();
     /* Рисуем сферу на орбите */
 
     glPushMatrix();
-    // Перенос в точку на орбите (вычисляем координаты)
+    /* Перенос в точку на орбите (вычисляем координаты) */
     float x = ORBIT_RADIUS * cos(orbitAngle);
     float z = ORBIT_RADIUS * sin(orbitAngle);
     glTranslatef(x, 0.0f, z);
 
-    // Собственное вращение сферы (вокруг своей оси Y)
+    /* Собственное вращение сферы (вокруг своей оси Y) */
     glRotatef(sphereRotAngle, 0.0, 1.0, 0.0);
 
-    // Рисуем сферу
+    /* Рисуем сферу */
     drawSphere();
     glPopMatrix();
 
