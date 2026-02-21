@@ -274,7 +274,7 @@ int main(int argc, char **argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(800, 600);
-    glutCreateWindow("И невозмможное возможно =). ESC для выхода.");
+    glutCreateWindow("И невозможное возможно =). ESC для выхода.");
 
     initOpenGL();
 
