@@ -4,9 +4,12 @@ LDFLAGS += -lglut -lGLU -lGL -lm
 
 all: cube
 
+moon: cube_moon.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o cube_moon cube_moon.c
+
 cube: cube.c  
 	$(CC) $(CFLAGS) $(LDFLAGS) -o cube cube.c
 
 clean:
-	rm -f *.o cube 
+	rm -f *.o cube cube_moon
 
