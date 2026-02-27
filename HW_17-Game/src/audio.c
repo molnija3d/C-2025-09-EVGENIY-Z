@@ -13,10 +13,10 @@ bool audioInit(AudioContext* ctx) {
 
     // Загружаем музыку и звуки (пути к файлам нужно будет создать)
     // Пока оставим заглушки, позже добавим реальные файлы
-    ctx->bgMusic = NULL; // Mix_LoadMUS("assets/sounds/bg.ogg");
-    ctx->soundMove = NULL; // Mix_LoadWAV("assets/sounds/move.wav");
-    ctx->soundWin = NULL; // Mix_LoadWAV("assets/sounds/win.wav");
-    ctx->soundGameOver = NULL; // Mix_LoadWAV("assets/sounds/gameover.wav");
+    ctx->bgMusic = Mix_LoadMUS("assets/sounds/bg.ogg");
+    ctx->soundMove = Mix_LoadWAV("assets/sounds/move.ogg");
+    ctx->soundWin =  Mix_LoadWAV("assets/sounds/win.ogg");
+    ctx->soundGameOver = Mix_LoadWAV("assets/sounds/gameover.ogg");
 
     // Если файлы не найдены, просто продолжаем без звуков (не фатально)
     if (!ctx->bgMusic) printf("Warning: could not load background music\n");
@@ -48,7 +48,7 @@ void audioToggle(AudioContext* ctx) {
         Mix_HaltChannel(-1);
     } else {
         // Если была остановлена музыка, можно возобновить
-        // Mix_ResumeMusic();
+         audioPlayMusic(ctx);
     }
 }
 
@@ -84,6 +84,6 @@ void audioPlayMusic(AudioContext* ctx) {
     }
 }
 
-void audioStopMusic(AudioContext* ctx) {
+void audioStopMusic( __attribute__((unused)) AudioContext* ctx) {
     Mix_HaltMusic();
 }

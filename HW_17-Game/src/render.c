@@ -24,8 +24,9 @@ static SDL_Color colors[] = {
 static int colorIndex(int value) {
     if (value == 0) return 0;
     int index = (int)log2(value); // 2->1, 4->2, 8->3, ...
-    if (index >= (int) sizeof(colors)/sizeof(colors[0]))
-        index = (int) sizeof(colors)/sizeof(colors[0]) - 1;
+    if (index >= (int) (sizeof(colors)/sizeof(colors[0]))) {
+        index = (int) (sizeof(colors)/sizeof(colors[0])) - 1;
+    }
     return index;
 }
 
@@ -48,7 +49,7 @@ bool renderInit(RenderContext* ctx, SDL_Window* window) {
     // Пока используем стандартный шрифт, но лучше положить .ttf в assets/fonts/
     ctx->font = TTF_OpenFont("assets/fonts/LiberationSans-Bold.ttf", 48);
     if (!ctx->font) {
-            printf("ERROR: No font \"LiberationSans-Bold.ttf\" in assets/fonts\r\n");
+        printf("ERROR: No font \"LiberationSans-Bold.ttf\" in assets/fonts\r\n");
         ctx->font = TTF_OpenFont("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", 48);
         if (!ctx->font) {
             // Попробуем другой распространённый путь
@@ -165,3 +166,4 @@ void renderGame(const RenderContext* ctx, const GameState* state) {
     // Обновляем экран
     SDL_RenderPresent(ren);
 }
+
