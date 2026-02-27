@@ -4,6 +4,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include "game.h"
+#include "leaderboard.h"
 
 // Структура для хранения ресурсов рендерера
 typedef struct {
@@ -23,4 +24,6 @@ void renderDestroy(RenderContext* ctx);
 // Отрисовка всего игрового поля
 void renderGame(const RenderContext* ctx, const GameState* state);
 
+// Отрисовка таблицы лидеров
+void renderLeaderboard(const RenderContext* ctx, const LeaderboardEntry entries[MAX_ENTRIES], int count);
 #endif

@@ -136,12 +136,7 @@ void renderGame(const RenderContext* ctx, const GameState* state) {
                 char text[16];
                 snprintf(text, sizeof(text), "%d", value);
                 // Цвет текста: тёмный для светлых плиток, светлый для тёмных
-                SDL_Color textColor = (value <= 4) ? (SDL_Color) {
-                    119, 110, 101, 255
-} :
-                (SDL_Color) {
-                    249, 246, 242, 255
-                };
+                SDL_Color textColor = (value <= 4) ? (SDL_Color) {119, 110, 101, 255} :(SDL_Color) {249, 246, 242, 255};
                 renderTextCentered(ren, ctx->font, text, tileRect, textColor);
             }
         }
@@ -167,3 +162,69 @@ void renderGame(const RenderContext* ctx, const GameState* state) {
     SDL_RenderPresent(ren);
 }
 
+void renderLeaderboard(const RenderContext* ctx, const LeaderboardEntry* entries, int count) {
+    SDL_Renderer* ren = ctx->renderer;
+    int w = ctx->windowWidth;
+    int h = ctx->windowHeight;
+
+    // Затемнение фона
+    SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(ren, 0, 0, 0, 200);
+    SDL_Rect fullRect = {0, 0, w, h};
+    SDL_RenderFillRect(ren, &fullRect);
+    SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_NONE);
+
+    if (!ctx->font) return; // без шрифта ничего не выведем
+
+    SDL_Color titleColor = {255, 255, 255, 255};
+    SDL_Color entryColor = {200, 200, 200, 255};
+
+    // Заголовок
+    SDL_Surface* surf = TTF_RenderUTF8_Blended(ctx->font, "Leaderboard", titleColor);
+    if (surf) {
+        SDL_Texture* tex = SDL_CreateTextureFromSurface(ren, surf);
+        SDL_Rect dst = { (w - surf->w) / 2, 10, surf->w, surf->h };
+        SDL_RenderCopy(ren, tex, NULL, &dst);
+        SDL_DestroyTexture(tex);
+        SDL_FreeSurface(surf);
+    }
+
+    int y = 120;
+    int lineHeight = 40;
+
+    if (count == 0) {
+        surf = TTF_RenderUTF8_Blended(ctx->font, "No records yet", entryColor);
+        if (surf) {
+            SDL_Texture* tex = SDL_CreateTextureFromSurface(ren, surf);
+            SDL_Rect dst = { (w - surf->w) / 2, y, surf->w, surf->h };
+            SDL_RenderCopy(ren, tex, NULL, &dst);
+            SDL_DestroyTexture(tex);
+            SDL_FreeSurface(surf);
+        }
+    } else {
+        char buffer[64];
+        for (int i = 0; i < count && i < 10; i++) {
+            snprintf(buffer, sizeof(buffer), "%d. %s - %d", i+1, entries[i].name, entries[i].score);
+            surf = TTF_RenderUTF8_Blended(ctx->font, buffer, entryColor);
+            if (surf) {
+                SDL_Texture* tex = SDL_CreateTextureFromSurface(ren, surf);
+                SDL_Rect dst = { (w - surf->w) / 2, y + i * lineHeight, surf->w, surf->h };
+                SDL_RenderCopy(ren, tex, NULL, &dst);
+                SDL_DestroyTexture(tex);
+                SDL_FreeSurface(surf);
+            }
+        }
+    }
+
+    // Подсказка
+    surf = TTF_RenderUTF8_Blended(ctx->font, "Press any key to return", entryColor);
+    if (surf) {
+        SDL_Texture* tex = SDL_CreateTextureFromSurface(ren, surf);
+        SDL_Rect dst = { (w - surf->w) / 2, 50, surf->w, surf->h };
+        SDL_RenderCopy(ren, tex, NULL, &dst);
+        SDL_DestroyTexture(tex);
+        SDL_FreeSurface(surf);
+    }
+
+    SDL_RenderPresent(ren);
+}
