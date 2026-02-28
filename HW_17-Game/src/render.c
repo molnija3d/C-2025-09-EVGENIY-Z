@@ -46,16 +46,16 @@ bool renderInit(RenderContext* ctx, SDL_Window* window) {
         return false;
     }
     /* Загрузка шрифта */
-    ctx->font = TTF_OpenFont("assets/fonts/LiberationSans-Bold.ttf", 48);
+    ctx->font = TTF_OpenFont("assets/fonts/LiberationSans-Bold.ttf",FONT_SIZE);
     if (!ctx->font) {
         printf("Ошибка, нет шрифта \"LiberationSans-Bold.ttf\" в assets/fonts\r\n");
-        ctx->font = TTF_OpenFont("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", 48);
+        ctx->font = TTF_OpenFont("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",FONT_SIZE);
         if (!ctx->font) {
             /* Попробуем другой распространённый путь */
-            ctx->font = TTF_OpenFont("/usr/share/fonts/liberation/LiberationSans-Bold.ttf", 48);
+            ctx->font = TTF_OpenFont("/usr/share/fonts/liberation/LiberationSans-Bold.ttf",FONT_SIZE);
             if (!ctx->font) {
                 /* Попробуем еще один распространённый путь */
-                ctx->font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 48);
+                ctx->font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",FONT_SIZE);
                 if (!ctx->font) {
                     printf("Сбой загрузки шрифта: %s\n", TTF_GetError());
                     /* Можно продолжить без шрифта, но не будут отображаться цифры */

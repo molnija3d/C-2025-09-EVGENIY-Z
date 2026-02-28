@@ -5,6 +5,7 @@
 #include <SDL2/SDL_ttf.h>
 #include "game.h"
 #include "leaderboard.h"
+#define FONT_SIZE 44
 
 /* Структура для хранения ресурсов рендерера */
 typedef struct {
