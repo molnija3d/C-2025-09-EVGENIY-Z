@@ -6,7 +6,7 @@
 #define SIZE 4
 #define TARGET 2048
 
-// Структура состояния игры
+/* Структура состояния игры */
 typedef struct {
     int board[SIZE][SIZE];
     int score;
@@ -21,34 +21,30 @@ typedef enum {
     PHASE_LEADERBOARD
 } GamePhase;
 
-// Инициализация нового игрового поля (две случайные плитки)
+/* Инициализация нового игрового поля (две случайные плитки) */
 void gameInit(GameState* state);
 
-// Добавление случайной плитки (2 с вероятностью 0.9, 4 с вероятностью 0.1)
+/* Добавление случайной плитки (2 с вероятностью 0.9, 4 с вероятностью 0.1) */
 bool gameAddRandomTile(GameState* state);
 
-// Перемещение влево (основная функция, остальные через повороты)
+/* Перемещение влево (основная функция, остальные через повороты) */
 bool gameMoveLeft(GameState* state);
 
-// Перемещение вправо (через отражение)
+/* Перемещение вправо (через отражение) */
 bool gameMoveRight(GameState* state);
 
-// Перемещение вверх
+/* Перемещение вверх */
 bool gameMoveUp(GameState* state);
 
-// Перемещение вниз
+/* Перемещение вниз */
 bool gameMoveDown(GameState* state);
 
-// Проверка, можно ли сделать ход (есть пустые клетки или соседние одинаковые)
+/* Проверка, можно ли сделать ход (есть пустые клетки или соседние одинаковые) */
 bool gameCanMove(const GameState* state);
 
-// Проверка победы (появилась плитка со значением TARGET)
+/* Проверка победы (появилась плитка со значением TARGET) */
 bool gameCheckWin(const GameState* state);
 
-// Проверка поражения (нет ходов)
+/* Проверка поражения (нет ходов) */
 bool gameCheckGameOver(const GameState* state);
-
-// Вывод поля в консоль (для отладки)
-void gamePrint(const GameState* state);
-
 #endif

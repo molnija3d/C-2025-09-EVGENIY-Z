@@ -2,32 +2,31 @@
 #include <stdio.h>
 
 bool audioInit(AudioContext* ctx) {
-    // Открываем аудиоустройство с параметрами по умолчанию
+    /* Открываем аудиоустройство с параметрами по умолчанию */
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
-        printf("SDL_mixer could not initialize! Error: %s\n", Mix_GetError());
+        printf("Ошибка инициализации SDL_mixer:  %s\n", Mix_GetError());
         return false;
     }
 
-    // Устанавливаем количество каналов для одновременного воспроизведения
+    /* Устанавливаем количество каналов для одновременного воспроизведения */
     Mix_AllocateChannels(16);
 
-    // Загружаем музыку и звуки (пути к файлам нужно будет создать)
-    // Пока оставим заглушки, позже добавим реальные файлы
+    /*Загружаем музыку и звуки */
     ctx->bgMusic = Mix_LoadMUS("assets/sounds/bg.ogg");
     ctx->soundMove = Mix_LoadWAV("assets/sounds/move.ogg");
     ctx->soundWin =  Mix_LoadWAV("assets/sounds/win.ogg");
     ctx->soundGameOver = Mix_LoadWAV("assets/sounds/gameover.ogg");
 
-    // Если файлы не найдены, просто продолжаем без звуков (не фатально)
-    if (!ctx->bgMusic) printf("Warning: could not load background music\n");
-    if (!ctx->soundMove) printf("Warning: could not load move sound\n");
-    if (!ctx->soundWin) printf("Warning: could not load win sound\n");
-    if (!ctx->soundGameOver) printf("Warning: could not load gameover sound\n");
+    /* Если файлы не найдены, просто продолжаем без звуков (не фатально) */
+    if (!ctx->bgMusic) printf("Предупреждение: не могу загрузить звук фоновой музыки\n");
+    if (!ctx->soundMove) printf("Предупреждение: не могу загрузить звук движения\n");
+    if (!ctx->soundWin) printf("Предупреждение: не могу загрузить звук победы\n");
+    if (!ctx->soundGameOver) printf("Предупреждение: не могу загрузить звук окончания игры\n");
 
     ctx->enabled = true;
-    ctx->volume = MIX_MAX_VOLUME; // 128
+    ctx->volume = MIX_MAX_VOLUME; /* 128 */
     Mix_VolumeMusic(ctx->volume);
-    // Устанавливаем громкость для всех каналов
+    /* Устанавливаем громкость для всех каналов */
     Mix_Volume(-1, ctx->volume);
 
     return true;
@@ -47,7 +46,7 @@ void audioToggle(AudioContext* ctx) {
         Mix_HaltMusic();
         Mix_HaltChannel(-1);
     } else {
-        // Если была остановлена музыка, можно возобновить
+        /* Если была остановлена музыка, можно возобновить */
          audioPlayMusic(ctx);
     }
 }
@@ -80,7 +79,7 @@ void audioPlayGameOver(AudioContext* ctx) {
 
 void audioPlayMusic(AudioContext* ctx) {
     if (ctx->enabled && ctx->bgMusic) {
-        Mix_PlayMusic(ctx->bgMusic, -1); // зациклить
+        Mix_PlayMusic(ctx->bgMusic, -1); /* зациклить */
     }
 }
 

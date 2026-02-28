@@ -6,25 +6,24 @@
 #include "game.h"
 #include "leaderboard.h"
 
-// Структура для хранения ресурсов рендерера
+/* Структура для хранения ресурсов рендерера */
 typedef struct {
     SDL_Renderer* renderer;
     TTF_Font* font;
     int windowWidth;
     int windowHeight;
-    // Можно добавить текстуры, если будем использовать
 } RenderContext;
 
-// Инициализация рендерера и загрузка шрифта
+/* Инициализация рендерера и загрузка шрифта */
 bool renderInit(RenderContext* ctx, SDL_Window* window);
 
-// Освобождение ресурсов
+/* Освобождение ресурсов */
 void renderDestroy(RenderContext* ctx);
 
-// Отрисовка всего игрового поля
+/* Отрисовка всего игрового поля */
 void renderGame(const RenderContext* ctx, const GameState* state);
 
-// Отрисовка таблицы лидеров
+/* Отрисовка таблицы лидеров */
 void renderLeaderboard(const RenderContext* ctx, const LeaderboardEntry entries[MAX_LEADERBOARD], int count);
 
 void renderMenu(const RenderContext* ctx, const char* items[], int count, int selected);

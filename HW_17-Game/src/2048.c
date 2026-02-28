@@ -9,13 +9,13 @@
 
 
 int main(int __attribute__((unused)) argc,  __attribute__((unused)) char*  argv[]) {
-    // Инициализация SDL (видео, аудио, события)
+    /* Инициализация SDL (видео, аудио, события) */
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
         printf("Ошибка инициализации SDL: %s\n", SDL_GetError());
         return 1;
     }
 
-    // Инициализация аудио
+    /* Инициализация аудио */
     AudioContext audio;
     if (!audioInit(&audio)) {
         printf("Предупреждение, аудио не инициализировано.\n");
@@ -79,7 +79,7 @@ int main(int __attribute__((unused)) argc,  __attribute__((unused)) char*  argv[
                     switch (event.key.keysym.sym) {
                     case SDLK_UP:
                         selectedMenuItem = (selectedMenuItem - 1 + menuItemsCount) % menuItemsCount;
-                        audioPlayMove(&audio); // звук перемещения
+                        audioPlayMove(&audio); /* звук перемещения */
                         break;
                     case SDLK_DOWN:
                         selectedMenuItem = (selectedMenuItem + 1) % menuItemsCount;
@@ -89,19 +89,19 @@ int main(int __attribute__((unused)) argc,  __attribute__((unused)) char*  argv[
                     case SDLK_KP_ENTER:
                         audioPlayMove(&audio);
                         switch (selectedMenuItem) {
-                        case 0: // New Game
+                        case 0: /* New Game */
                             gameInit(&game);
                             currentPhase = PHASE_PLAY;
                             break;
-                        case 1: // Controls
+                        case 1: /* Controls */
                             currentPhase = PHASE_CONTROLS;
                             break;
-                        case 2: // Leaderboard
-                            // Перезагружаем таблицу (на случай, если изменилась)
+                        case 2: /* Leaderboard */
+                            /* Перезагружаем таблицу (на случай, если изменилась) */
                             leaderboardCount = loadLeaderboard(leaderboard, MAX_LEADERBOARD);
                             currentPhase = PHASE_LEADERBOARD;
                             break;
-                        case 3: // Exit
+                        case 3: /* Выход */
                             running = false;
                             break;
                         }
@@ -144,12 +144,11 @@ int main(int __attribute__((unused)) argc,  __attribute__((unused)) char*  argv[
                     }
                     if (game.win) {
                         audioPlayWin(&audio);
-                        // Проверяем рекорд
+                        /* Проверяем рекорд */
                         if (addLeaderboardEntry(leaderboard, &leaderboardCount, "Игрок", game.score)) {
                             saveLeaderboard(leaderboard, leaderboardCount);
                             currentPhase = PHASE_LEADERBOARD;
                         }
-                        // Можно перейти в меню или остаться, но пока остаёмся, чтобы игрок видел победу
                     } else if (game.gameOver) {
                         audioPlayGameOver(&audio);
                         if (addLeaderboardEntry(leaderboard, &leaderboardCount, "Игрок", game.score)) {
@@ -161,9 +160,9 @@ int main(int __attribute__((unused)) argc,  __attribute__((unused)) char*  argv[
                 break;
 
                 case PHASE_CONTROLS:
-                    // Любая клавиша возвращает в меню
                     currentPhase = PHASE_CONTROLS;
                     audioPlayMove(&audio);
+                    /* проверяем нажатие ESC */
                     switch (event.key.keysym.sym) {
                     case SDLK_ESCAPE:
                         currentPhase = PHASE_MENU;
@@ -172,9 +171,9 @@ int main(int __attribute__((unused)) argc,  __attribute__((unused)) char*  argv[
                     break;
 
                 case PHASE_LEADERBOARD:
-                    // Любая клавиша возвращает в меню
                     currentPhase = PHASE_LEADERBOARD;
                     audioPlayMove(&audio);
+                    /* проверяем нажатие ESC */
                     switch (event.key.keysym.sym) {
                     case SDLK_ESCAPE:
                         currentPhase = PHASE_MENU;
@@ -192,7 +191,7 @@ int main(int __attribute__((unused)) argc,  __attribute__((unused)) char*  argv[
             }
         }
 
-        // Отрисовка в зависимости от фазы
+        /* Отрисовка в зависимости от фазы */
         switch (currentPhase) {
         case PHASE_MENU:
             renderMenu(&renderCtx, menuItems, menuItemsCount, selectedMenuItem);

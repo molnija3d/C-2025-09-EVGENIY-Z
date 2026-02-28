@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <pwd.h>
 
-// Получаем путь к домашней директории пользователя
+/* Получаем путь к домашней директории пользователя */
 static const char* getHomeDir(void) {
     const char* home = getenv("HOME");
     if (!home) {
@@ -24,13 +24,13 @@ const char* getLeaderboardPath(void) {
     return path;
 }
 
-// Создаёт директорию, если её нет
+/* Создаёт директорию, если её нет */
 static void ensureDirExists(const char* path) {
     char* dir = strdup(path);
     char* lastSlash = strrchr(dir, '/');
     if (lastSlash) {
         *lastSlash = '\0';
-        mkdir(dir, 0755); // создаём директорию, если её нет
+        mkdir(dir, 0755); /* создаём директорию, если её нет */
     }
     free(dir);
 }
@@ -38,12 +38,12 @@ static void ensureDirExists(const char* path) {
 int loadLeaderboard(LeaderboardEntry* entries, int maxEntries) {
     const char* path = getLeaderboardPath();
     FILE* f = fopen(path, "r");
-    if (!f) return 0; // файла нет – пустая таблица
+    if (!f) return 0; /* файла нет – пустая таблица */
 
     int count = 0;
     char line[256];
     while (fgets(line, sizeof(line), f) && count < maxEntries) {
-        // Ожидаем формат: "Имя число"
+        /* Ожидаем формат: "Имя число" */
         char name[NAME_LENGTH];
         int score;
         if (sscanf(line, "%19s %d", name, &score) == 2) {
@@ -59,7 +59,7 @@ int loadLeaderboard(LeaderboardEntry* entries, int maxEntries) {
 
 void saveLeaderboard(const LeaderboardEntry* entries, int count) {
     const char* path = getLeaderboardPath();
-    ensureDirExists(path); // убедимся, что директория существует
+    ensureDirExists(path); /* убедимся, что директория существует */
 
     FILE* f = fopen(path, "w");
     if (!f) return;
@@ -70,7 +70,7 @@ void saveLeaderboard(const LeaderboardEntry* entries, int count) {
     fclose(f);
 }
 
-// Сортировка по убыванию счёта
+/* Сортировка по убыванию счёта */
 static int compareEntries(const void* a, const void* b) {
     const LeaderboardEntry* ea = (const LeaderboardEntry*)a;
     const LeaderboardEntry* eb = (const LeaderboardEntry*)b;
@@ -80,16 +80,16 @@ static int compareEntries(const void* a, const void* b) {
 bool addLeaderboardEntry(LeaderboardEntry* entries, int* count, const char* name, int score) {
     if (!isHighScore(entries, *count, score)) return false;
 
-    // Добавляем новую запись
+    /* Добавляем новую запись */
     strncpy(entries[*count].name, name, NAME_LENGTH - 1);
     entries[*count].name[NAME_LENGTH - 1] = '\0';
     entries[*count].score = score;
     (*count)++;
 
-    // Сортируем
+    /* Сортируем */
     qsort(entries, *count, sizeof(LeaderboardEntry), compareEntries);
 
-    // Обрезаем до 10
+    /* Обрезаем до 10 */
     if (*count > MAX_LEADERBOARD) {
         *count = MAX_LEADERBOARD;
     }
@@ -97,8 +97,8 @@ bool addLeaderboardEntry(LeaderboardEntry* entries, int* count, const char* name
 }
 
 bool isHighScore(const LeaderboardEntry* entries, int count, int score) {
-    if (count < MAX_LEADERBOARD) return true; // есть свободное место
-    // Проверяем, больше ли счёт минимального в таблице
-    int minScore = entries[count - 1].score; // после сортировки последний - минимальный
+    if (count < MAX_LEADERBOARD) return true; /* есть свободное место */
+    /* Проверяем, больше ли счёт минимального в таблице */
+    int minScore = entries[count - 1].score; /* после сортировки последний - минимальный */
     return score > minScore;
 }
