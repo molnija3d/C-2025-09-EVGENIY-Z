@@ -25,5 +25,9 @@ void renderDestroy(RenderContext* ctx);
 void renderGame(const RenderContext* ctx, const GameState* state);
 
 // Отрисовка таблицы лидеров
-void renderLeaderboard(const RenderContext* ctx, const LeaderboardEntry entries[MAX_ENTRIES], int count);
+void renderLeaderboard(const RenderContext* ctx, const LeaderboardEntry entries[MAX_LEADERBOARD], int count);
+
+void renderMenu(const RenderContext* ctx, const char* items[], int count, int selected);
+void renderControls(const RenderContext* ctx);
+
 #endif

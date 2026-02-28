@@ -6,53 +6,50 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <pwd.h>
-#include <libgen.h>
 
-static char config_path[512] = {0};
-
-// Вспомогательная функция для получения пути к файлу с рекордами
-static const char* getLeaderboardPath() {
-    if (config_path[0] == '\0') {
-        const char *homedir;
-        if ((homedir = getenv("HOME")) == NULL) {
-            homedir = getpwuid(getuid())->pw_dir;
-        }
-        snprintf(config_path, sizeof(config_path), "%s/.local/share/2048", homedir);
-        // Создаём директорию, если её нет
-        mkdir(config_path, 0755); // может не создаться, но мы проверим позже
-        strncat(config_path, "/scores.txt", sizeof(config_path) - strlen(config_path) - 1);
+// Получаем путь к домашней директории пользователя
+static const char* getHomeDir(void) {
+    const char* home = getenv("HOME");
+    if (!home) {
+        struct passwd* pw = getpwuid(getuid());
+        if (pw) home = pw->pw_dir;
     }
-    return config_path;
+    return home ? home : ".";
 }
 
-void leaderboardInit() {
-    // Создаём директорию при необходимости
-    const char* path = getLeaderboardPath();
-    char *dir = strdup(path);
-    if (dir) {
-        char *dname = dirname(dir);
-        mkdir(dname, 0755); // игнорируем ошибки
-        free(dir);
-    }
+const char* getLeaderboardPath(void) {
+    static char path[512];
+    const char* home = getHomeDir();
+    snprintf(path, sizeof(path), "%s/.local/share/2048/scores.txt", home);
+    return path;
 }
 
-int leaderboardLoad(LeaderboardEntry entries[MAX_ENTRIES]) {
+// Создаёт директорию, если её нет
+static void ensureDirExists(const char* path) {
+    char* dir = strdup(path);
+    char* lastSlash = strrchr(dir, '/');
+    if (lastSlash) {
+        *lastSlash = '\0';
+        mkdir(dir, 0755); // создаём директорию, если её нет
+    }
+    free(dir);
+}
+
+int loadLeaderboard(LeaderboardEntry* entries, int maxEntries) {
     const char* path = getLeaderboardPath();
     FILE* f = fopen(path, "r");
-    if (!f) return 0;
+    if (!f) return 0; // файла нет – пустая таблица
 
     int count = 0;
     char line[256];
-    while (count < MAX_ENTRIES && fgets(line, sizeof(line), f)) {
-        // Удаляем возможный \n в конце
-        line[strcspn(line, "\n")] = 0;
-        // Формат: "Имя счёт"
-        char* space = strrchr(line, ' ');
-        if (space) {
-            *space = '\0';
-            strncpy(entries[count].name, line, MAX_NAME_LEN);
-            entries[count].name[MAX_NAME_LEN] = '\0';
-            entries[count].score = atoi(space + 1);
+    while (fgets(line, sizeof(line), f) && count < maxEntries) {
+        // Ожидаем формат: "Имя число"
+        char name[NAME_LENGTH];
+        int score;
+        if (sscanf(line, "%19s %d", name, &score) == 2) {
+            strncpy(entries[count].name, name, NAME_LENGTH - 1);
+            entries[count].name[NAME_LENGTH - 1] = '\0';
+            entries[count].score = score;
             count++;
         }
     }
@@ -60,8 +57,10 @@ int leaderboardLoad(LeaderboardEntry entries[MAX_ENTRIES]) {
     return count;
 }
 
-void leaderboardSave(const LeaderboardEntry entries[MAX_ENTRIES], int count) {
+void saveLeaderboard(const LeaderboardEntry* entries, int count) {
     const char* path = getLeaderboardPath();
+    ensureDirExists(path); // убедимся, что директория существует
+
     FILE* f = fopen(path, "w");
     if (!f) return;
 
@@ -71,59 +70,35 @@ void leaderboardSave(const LeaderboardEntry entries[MAX_ENTRIES], int count) {
     fclose(f);
 }
 
-bool leaderboardIsHighScore(int score) {
-    LeaderboardEntry entries[MAX_ENTRIES];
-    int count = leaderboardLoad(entries);
-
-    // Если меньше MAX_ENTRIES, то любой счёт подходит (кроме 0, но 0 не должен быть)
-    if (count < MAX_ENTRIES) return score > 0;
-
-    // Иначе нужно быть больше минимального счёта в таблице
-    int minScore = entries[count-1].score; // последний (наименьший)
-    return score > minScore;
+// Сортировка по убыванию счёта
+static int compareEntries(const void* a, const void* b) {
+    const LeaderboardEntry* ea = (const LeaderboardEntry*)a;
+    const LeaderboardEntry* eb = (const LeaderboardEntry*)b;
+    return eb->score - ea->score;
 }
 
-int leaderboardAddEntry(const char* name, int score) {
-    if (!leaderboardIsHighScore(score)) return -1;
-
-    LeaderboardEntry entries[MAX_ENTRIES];
-    int count = leaderboardLoad(entries);
+bool addLeaderboardEntry(LeaderboardEntry* entries, int* count, const char* name, int score) {
+    if (!isHighScore(entries, *count, score)) return false;
 
     // Добавляем новую запись
-    LeaderboardEntry newEntry;
-    strncpy(newEntry.name, name, MAX_NAME_LEN);
-    newEntry.name[MAX_NAME_LEN] = '\0';
-    newEntry.score = score;
+    strncpy(entries[*count].name, name, NAME_LENGTH - 1);
+    entries[*count].name[NAME_LENGTH - 1] = '\0';
+    entries[*count].score = score;
+    (*count)++;
 
-    // Вставляем в нужное место (сортировка по убыванию)
-    int pos = count; // позиция для вставки, если в конец
-    for (int i = 0; i < count; i++) {
-        if (score > entries[i].score) {
-            pos = i;
-            break;
-        }
+    // Сортируем
+    qsort(entries, *count, sizeof(LeaderboardEntry), compareEntries);
+
+    // Обрезаем до 10
+    if (*count > MAX_LEADERBOARD) {
+        *count = MAX_LEADERBOARD;
     }
-
-    // Сдвигаем элементы вправо, если нужно
-    if (pos < count) {
-        for (int i = count; i > pos; i--) {
-            if (i < MAX_ENTRIES) {
-                entries[i] = entries[i-1];
-            }
-        }
-    }
-
-    // Вставляем
-    if (pos < MAX_ENTRIES) {
-        entries[pos] = newEntry;
-        if (count < MAX_ENTRIES) count++;
-    }
-
-    // Сохраняем
-    leaderboardSave(entries, count);
-    return pos + 1; // место (1-индексированное)
+    return true;
 }
 
-int leaderboardGetTop(LeaderboardEntry entries[MAX_ENTRIES]) {
-    return leaderboardLoad(entries);
+bool isHighScore(const LeaderboardEntry* entries, int count, int score) {
+    if (count < MAX_LEADERBOARD) return true; // есть свободное место
+    // Проверяем, больше ли счёт минимального в таблице
+    int minScore = entries[count - 1].score; // после сортировки последний - минимальный
+    return score > minScore;
 }

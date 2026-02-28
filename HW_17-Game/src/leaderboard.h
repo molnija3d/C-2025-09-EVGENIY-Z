@@ -3,32 +3,28 @@
 
 #include <stdbool.h>
 
-#define MAX_NAME_LEN 20
-#define MAX_ENTRIES 10
+#define MAX_LEADERBOARD 10
+#define NAME_LENGTH 20
 
 typedef struct {
-    char name[MAX_NAME_LEN + 1];
+    char name[NAME_LENGTH];
     int score;
 } LeaderboardEntry;
 
-// Инициализация: создаёт папку для сохранения, загружает записи
-void leaderboardInit();
+// Возвращает путь к файлу с таблицей (статический буфер)
+const char* getLeaderboardPath(void);
 
-// Загружает записи из файла в предоставленный массив
-// Возвращает количество загруженных записей (до MAX_ENTRIES)
-int leaderboardLoad(LeaderboardEntry entries[MAX_ENTRIES]);
+// Загружает таблицу из файла, возвращает количество записей
+int loadLeaderboard(LeaderboardEntry* entries, int maxEntries);
 
-// Сохраняет массив записей (количество count) в файл
-void leaderboardSave(const LeaderboardEntry entries[MAX_ENTRIES], int count);
+// Сохраняет таблицу в файл
+void saveLeaderboard(const LeaderboardEntry* entries, int count);
 
-// Проверяет, достоин ли счёт попасть в таблицу (больше минимального или есть место)
-bool leaderboardIsHighScore(int score);
+// Добавляет новую запись, если она достойна (сортировка и обрезка до 10)
+// Возвращает true, если запись добавлена
+bool addLeaderboardEntry(LeaderboardEntry* entries, int* count, const char* name, int score);
 
-// Добавляет новую запись (имя, счёт) в таблицу, сортирует и сохраняет
-// Возвращает место, на которое попала запись (1-10) или -1, если не попала
-int leaderboardAddEntry(const char* name, int score);
-
-// Получает текущую таблицу для отображения (заполняет массив, возвращает количество)
-int leaderboardGetTop(LeaderboardEntry entries[MAX_ENTRIES]);
+// Проверяет, попадает ли счёт в таблицу рекордов
+bool isHighScore(const LeaderboardEntry* entries, int count, int score);
 
 #endif

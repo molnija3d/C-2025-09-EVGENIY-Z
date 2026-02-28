@@ -36,7 +36,7 @@ bool renderInit(RenderContext* ctx, SDL_Window* window) {
         // Если рендерер не был создан, создадим его
         ctx->renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
         if (!ctx->renderer) {
-            printf("Failed to create renderer: %s\n", SDL_GetError());
+            printf("Ошибка создания renderer: %s\n", SDL_GetError());
             return false;
         }
     }
@@ -45,11 +45,10 @@ bool renderInit(RenderContext* ctx, SDL_Window* window) {
         printf("TTF_Init error: %s\n", TTF_GetError());
         return false;
     }
-    // Загрузка шрифта (путь к файлу нужно будет указать)
-    // Пока используем стандартный шрифт, но лучше положить .ttf в assets/fonts/
+    // Загрузка шрифта 
     ctx->font = TTF_OpenFont("assets/fonts/LiberationSans-Bold.ttf", 48);
     if (!ctx->font) {
-        printf("ERROR: No font \"LiberationSans-Bold.ttf\" in assets/fonts\r\n");
+        printf("Ошибка, нет шрифта \"LiberationSans-Bold.ttf\" в assets/fonts\r\n");
         ctx->font = TTF_OpenFont("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", 48);
         if (!ctx->font) {
             // Попробуем другой распространённый путь
@@ -58,9 +57,8 @@ bool renderInit(RenderContext* ctx, SDL_Window* window) {
                 // Попробуем еще один распространённый путь
                 ctx->font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 48);
                 if (!ctx->font) {
-                    printf("Failed to load font: %s\n", TTF_GetError());
+                    printf("Сбой загрузки шрифта: %s\n", TTF_GetError());
                     // Можно продолжить без шрифта, но тогда не будут отображаться цифры
-                    // или можно создать fallback через поверхности
                 }
             }
         }
@@ -162,7 +160,7 @@ void renderGame(const RenderContext* ctx, const GameState* state) {
     SDL_RenderPresent(ren);
 }
 
-void renderLeaderboard(const RenderContext* ctx, const LeaderboardEntry* entries, int count) {
+void renderLeaderboard(const RenderContext* ctx, const LeaderboardEntry entries[MAX_LEADERBOARD], int count) {
     SDL_Renderer* ren = ctx->renderer;
     int w = ctx->windowWidth;
     int h = ctx->windowHeight;
@@ -180,7 +178,7 @@ void renderLeaderboard(const RenderContext* ctx, const LeaderboardEntry* entries
     SDL_Color entryColor = {200, 200, 200, 255};
 
     // Заголовок
-    SDL_Surface* surf = TTF_RenderUTF8_Blended(ctx->font, "Leaderboard", titleColor);
+    SDL_Surface* surf = TTF_RenderUTF8_Blended(ctx->font, "Таблица лидеров", titleColor);
     if (surf) {
         SDL_Texture* tex = SDL_CreateTextureFromSurface(ren, surf);
         SDL_Rect dst = { (w - surf->w) / 2, 10, surf->w, surf->h };
@@ -189,11 +187,11 @@ void renderLeaderboard(const RenderContext* ctx, const LeaderboardEntry* entries
         SDL_FreeSurface(surf);
     }
 
-    int y = 120;
-    int lineHeight = 40;
+    int y = 80;
+    int lineHeight = 45;
 
     if (count == 0) {
-        surf = TTF_RenderUTF8_Blended(ctx->font, "No records yet", entryColor);
+        surf = TTF_RenderUTF8_Blended(ctx->font, "Нет данных", entryColor);
         if (surf) {
             SDL_Texture* tex = SDL_CreateTextureFromSurface(ren, surf);
             SDL_Rect dst = { (w - surf->w) / 2, y, surf->w, surf->h };
@@ -216,14 +214,110 @@ void renderLeaderboard(const RenderContext* ctx, const LeaderboardEntry* entries
         }
     }
 
-    // Подсказка
-    surf = TTF_RenderUTF8_Blended(ctx->font, "Press any key to return", entryColor);
+    surf = TTF_RenderUTF8_Blended(ctx->font, "Выход - ESC", entryColor);
     if (surf) {
         SDL_Texture* tex = SDL_CreateTextureFromSurface(ren, surf);
-        SDL_Rect dst = { (w - surf->w) / 2, 50, surf->w, surf->h };
+        SDL_Rect dst = { (w - surf->w) / 2, 540, surf->w, surf->h };
         SDL_RenderCopy(ren, tex, NULL, &dst);
         SDL_DestroyTexture(tex);
         SDL_FreeSurface(surf);
+    }
+
+    SDL_RenderPresent(ren);
+}
+
+void renderMenu(const RenderContext* ctx, const char* items[], int count, int selected) {
+    SDL_Renderer* ren = ctx->renderer;
+    int w = ctx->windowWidth;
+
+    // Фон
+    SDL_SetRenderDrawColor(ren, 250, 248, 239, 255);
+    SDL_RenderClear(ren);
+
+    // Заголовок
+    if (ctx->font) {
+        SDL_Color titleColor = {119, 110, 101, 255};
+        SDL_Surface* surf = TTF_RenderUTF8_Blended(ctx->font, "*** 2048 ***", titleColor);
+        if (surf) {
+            SDL_Texture* tex = SDL_CreateTextureFromSurface(ren, surf);
+            SDL_Rect dst = { (w - surf->w) / 2, 100, surf->w, surf->h };
+            SDL_RenderCopy(ren, tex, NULL, &dst);
+            SDL_DestroyTexture(tex);
+            SDL_FreeSurface(surf);
+        }
+    }
+
+    // Пункты меню
+    int startY = 250;
+    int spacing = 60;
+    for (int i = 0; i < count; i++) {
+        SDL_Color color;
+        if (i == selected) {
+            color = (SDL_Color){246, 124, 95, 255}; // оранжевый
+        } else {
+            color = (SDL_Color){119, 110, 101, 255}; // серый
+        }
+        if (ctx->font) {
+            SDL_Surface* surf = TTF_RenderUTF8_Blended(ctx->font, items[i], color);
+            if (surf) {
+                SDL_Texture* tex = SDL_CreateTextureFromSurface(ren, surf);
+                SDL_Rect dst = { (w - surf->w) / 2, startY + i * spacing, surf->w, surf->h };
+                SDL_RenderCopy(ren, tex, NULL, &dst);
+                SDL_DestroyTexture(tex);
+                SDL_FreeSurface(surf);
+            }
+        }
+    }
+
+    SDL_RenderPresent(ren);
+}
+
+void renderControls(const RenderContext* ctx) {
+    SDL_Renderer* ren = ctx->renderer;
+    int w = ctx->windowWidth;
+
+    // Фон
+    SDL_SetRenderDrawColor(ren, 250, 248, 239, 255);
+    SDL_RenderClear(ren);
+
+    // Заголовок
+    if (ctx->font) {
+        SDL_Color titleColor = {119, 110, 101, 255};
+        SDL_Surface* surf = TTF_RenderUTF8_Blended(ctx->font, "Управление", titleColor);
+        if (surf) {
+            SDL_Texture* tex = SDL_CreateTextureFromSurface(ren, surf);
+            SDL_Rect dst = { (w - surf->w) / 2, 80, surf->w, surf->h };
+            SDL_RenderCopy(ren, tex, NULL, &dst);
+            SDL_DestroyTexture(tex);
+            SDL_FreeSurface(surf);
+        }
+    }
+
+    // Список управления
+    const char* lines[] = {
+        "Стрелки - передвижение",
+        "R - перезапуск",
+        "M - звук",
+        "ESC - меню",
+        "",
+        "Выход - ESC"
+    };
+    int lineCount = 6;
+    int startY = 200;
+    int spacing = 40;
+    SDL_Color textColor = {119, 110, 101, 255};
+
+    for (int i = 0; i < lineCount; i++) {
+        if (ctx->font) {
+            SDL_Surface* surf = TTF_RenderUTF8_Blended(ctx->font, lines[i], textColor);
+            if (surf) {
+                SDL_Texture* tex = SDL_CreateTextureFromSurface(ren, surf);
+                SDL_Rect dst = { (w - surf->w) / 2, startY + i * spacing, surf->w, surf->h };
+                SDL_RenderCopy(ren, tex, NULL, &dst);
+                SDL_DestroyTexture(tex);
+                SDL_FreeSurface(surf);
+            }
+        }
     }
 
     SDL_RenderPresent(ren);

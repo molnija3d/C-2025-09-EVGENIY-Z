@@ -7,34 +7,27 @@
 #include "audio.h"
 #include "leaderboard.h"
 
-typedef enum {
-    PHASE_MENU,
-    PHASE_PLAY,
-    PHASE_CONTROLS,
-    PHASE_LEADERBOARD
-} GamePhase;
 
 int main(int __attribute__((unused)) argc,  __attribute__((unused)) char*  argv[]) {
     // Инициализация SDL (видео, аудио, события)
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
-        printf("SDL_Init error: %s\n", SDL_GetError());
+        printf("Ошибка инициализации SDL: %s\n", SDL_GetError());
         return 1;
     }
 
     // Инициализация аудио
     AudioContext audio;
     if (!audioInit(&audio)) {
-        printf("Warning: audio initialization failed, continuing without sound.\n");
-        // Но мы всё равно можем продолжать, звука не будет
+        printf("Предупреждение, аудио не инициализировано.\n");
     }
 
-    SDL_Window* window = SDL_CreateWindow("My super 2048. ESC -выход, m -выключить звук, r -рестарт",
+    SDL_Window* window = SDL_CreateWindow("2048 на Си",
                                           SDL_WINDOWPOS_CENTERED,
                                           SDL_WINDOWPOS_CENTERED,
                                           600, 600,
                                           SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if (!window) {
-        printf("Window creation error: %s\n", SDL_GetError());
+        printf("Ошибка создания окна: %s\n", SDL_GetError());
         audioDestroy(&audio);
         SDL_Quit();
         return 1;
@@ -42,7 +35,7 @@ int main(int __attribute__((unused)) argc,  __attribute__((unused)) char*  argv[
 
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!renderer) {
-        printf("Renderer creation error: %s\n", SDL_GetError());
+        printf("Ошибка создания renderer: %s\n", SDL_GetError());
         SDL_DestroyWindow(window);
         audioDestroy(&audio);
         SDL_Quit();
@@ -51,30 +44,77 @@ int main(int __attribute__((unused)) argc,  __attribute__((unused)) char*  argv[
 
     RenderContext renderCtx;
     if (!renderInit(&renderCtx, window)) {
-        printf("Warning: renderInit failed, continuing without font.\n");
+        printf("Предупреждение: ошибка renderInit, работаем без шрифта.\n");
     }
 
     GameState game;
     gameInit(&game);
 
-    leaderboardInit();
-    GamePhase phase = PHASE_PLAYING;
-    bool showLeaderboard = false; // или используем phase
+    /* Переменные для меню */
+    GamePhase currentPhase = PHASE_MENU;
+    int selectedMenuItem = 0;          /* 0: Новая игра, 1: Управление, 2: Таблица лидеров, 3: Выход */
+    const char* menuItems[] = {"Новая игра", "Управление", "Таблица лидеров", "Выход"};
+    int menuItemsCount = 4;
 
-    // Запускаем фоновую музыку, если есть
+    /* Для таблицы лидеров */
+    LeaderboardEntry leaderboard[MAX_LEADERBOARD];
+    int leaderboardCount = 0;
+    /* Загружаем таблицу лидеров при старте */
+    leaderboardCount = loadLeaderboard(leaderboard, MAX_LEADERBOARD);
+
+    /* Запускаем фоновую музыку, если есть */
     audioPlayMusic(&audio);
 
     bool running = true;
     SDL_Event event;
-    bool movePerformed;
-    // главный цикл
+
+    /* главный цикл */
     while (running) {
-        movePerformed = false;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
             } else if (event.type == SDL_KEYDOWN) {
-                if (phase == PHASE_PLAYING) {
+                switch (currentPhase) {
+                case PHASE_MENU:
+                    switch (event.key.keysym.sym) {
+                    case SDLK_UP:
+                        selectedMenuItem = (selectedMenuItem - 1 + menuItemsCount) % menuItemsCount;
+                        audioPlayMove(&audio); // звук перемещения
+                        break;
+                    case SDLK_DOWN:
+                        selectedMenuItem = (selectedMenuItem + 1) % menuItemsCount;
+                        audioPlayMove(&audio);
+                        break;
+                    case SDLK_RETURN:
+                    case SDLK_KP_ENTER:
+                        audioPlayMove(&audio);
+                        switch (selectedMenuItem) {
+                        case 0: // New Game
+                            gameInit(&game);
+                            currentPhase = PHASE_PLAY;
+                            break;
+                        case 1: // Controls
+                            currentPhase = PHASE_CONTROLS;
+                            break;
+                        case 2: // Leaderboard
+                            // Перезагружаем таблицу (на случай, если изменилась)
+                            leaderboardCount = loadLeaderboard(leaderboard, MAX_LEADERBOARD);
+                            currentPhase = PHASE_LEADERBOARD;
+                            break;
+                        case 3: // Exit
+                            running = false;
+                            break;
+                        }
+                        break;
+                    case SDLK_ESCAPE:
+                        running = false;
+                        break;
+                    }
+                    break;
+
+                case PHASE_PLAY:
+                {
+                    bool movePerformed = false;
                     switch (event.key.keysym.sym) {
                     case SDLK_UP:
                         movePerformed = gameMoveUp(&game);
@@ -88,46 +128,61 @@ int main(int __attribute__((unused)) argc,  __attribute__((unused)) char*  argv[
                     case SDLK_RIGHT:
                         movePerformed = gameMoveRight(&game);
                         break;
-                    case SDLK_l:     // переключиться на таблицу лидеров
-                        phase = PHASE_LEADERBOARD;
-                        break;
                     case SDLK_r:
-                        // Запускаем фоновую музыку
-                        audioPlayMusic(&audio);
-                        movePerformed = true;
                         gameInit(&game);
+                        movePerformed = true;
                         break;
-                    case SDLK_m:     // клавиша M для включения/выключения звука
+                    case SDLK_m:
                         audioToggle(&audio);
                         break;
                     case SDLK_ESCAPE:
-                        running = false;
+                        currentPhase = PHASE_MENU;
                         break;
                     }
-                    // Если был произведён ход, проигрываем звук
                     if (movePerformed) {
                         audioPlayMove(&audio);
                     }
-                    // Проверяем, не наступила ли победа/поражение, и проигрываем соответствующий звук
                     if (game.win) {
                         audioPlayWin(&audio);
-                        phase = PHASE_LEADERBOARD;
-// Проверяем, достоин ли счёт попасть в таблицу
-                        if (leaderboardIsHighScore(game.score)) {
-                            // Добавляем запись с именем "Player" (можно заменить на ввод)
-                            leaderboardAddEntry("Player", game.score);
+                        // Проверяем рекорд
+                        if (addLeaderboardEntry(leaderboard, &leaderboardCount, "Игрок", game.score)) {
+                            saveLeaderboard(leaderboard, leaderboardCount);
+                            currentPhase = PHASE_LEADERBOARD;
                         }
+                        // Можно перейти в меню или остаться, но пока остаёмся, чтобы игрок видел победу
                     } else if (game.gameOver) {
                         audioPlayGameOver(&audio);
-                        audioStopMusic(&audio);
-                        phase = PHASE_LEADERBOARD;
-                        if (leaderboardIsHighScore(game.score)) {
-                            leaderboardAddEntry("Player", game.score);
+                        if (addLeaderboardEntry(leaderboard, &leaderboardCount, "Игрок", game.score)) {
+                            saveLeaderboard(leaderboard, leaderboardCount);
                         }
+                        currentPhase = PHASE_LEADERBOARD;
                     }
-                } else if (phase == PHASE_LEADERBOARD) {
-                    // Любая клавиша возвращает в игру
-                    phase = PHASE_PLAYING;
+                }
+                break;
+
+                case PHASE_CONTROLS:
+                    // Любая клавиша возвращает в меню
+                    currentPhase = PHASE_CONTROLS;
+                    audioPlayMove(&audio);
+                    switch (event.key.keysym.sym) {
+                    case SDLK_ESCAPE:
+                        currentPhase = PHASE_MENU;
+                        break;
+                    }
+                    break;
+
+                case PHASE_LEADERBOARD:
+                    // Любая клавиша возвращает в меню
+                    currentPhase = PHASE_LEADERBOARD;
+                    audioPlayMove(&audio);
+                    switch (event.key.keysym.sym) {
+                    case SDLK_ESCAPE:
+                        currentPhase = PHASE_MENU;
+                        break;
+                    }
+
+
+                    break;
                 }
             } else if (event.type == SDL_WINDOWEVENT) {
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
@@ -137,17 +192,22 @@ int main(int __attribute__((unused)) argc,  __attribute__((unused)) char*  argv[
             }
         }
 
-// Отрисовка в зависимости от фазы
-        if (phase == PHASE_PLAYING) {
+        // Отрисовка в зависимости от фазы
+        switch (currentPhase) {
+        case PHASE_MENU:
+            renderMenu(&renderCtx, menuItems, menuItemsCount, selectedMenuItem);
+            break;
+        case PHASE_PLAY:
             renderGame(&renderCtx, &game);
-        } else if (phase == PHASE_LEADERBOARD) {
-            LeaderboardEntry entries[MAX_ENTRIES];
-            int count = leaderboardGetTop(entries);
-            renderLeaderboard(&renderCtx, entries, count);
-            audioPlayMusic(&audio);
-            movePerformed = true;
-            gameInit(&game);
+            break;
+        case PHASE_CONTROLS:
+            renderControls(&renderCtx);
+            break;
+        case PHASE_LEADERBOARD:
+            renderLeaderboard(&renderCtx, leaderboard, leaderboardCount);
+            break;
         }
+
         SDL_Delay(16);
     }
 
