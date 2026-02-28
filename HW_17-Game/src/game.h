@@ -14,6 +14,13 @@ typedef struct {
     bool win;
 } GameState;
 
+typedef enum {
+    PHASE_MENU,
+    PHASE_PLAY,
+    PHASE_CONTROLS,
+    PHASE_LEADERBOARD
+} GamePhase;
+
 // Инициализация нового игрового поля (две случайные плитки)
 void gameInit(GameState* state);
 

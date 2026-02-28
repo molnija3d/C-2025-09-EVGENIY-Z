@@ -8,7 +8,9 @@
 #include "leaderboard.h"
 
 typedef enum {
-    PHASE_PLAYING,
+    PHASE_MENU,
+    PHASE_PLAY,
+    PHASE_CONTROLS,
     PHASE_LEADERBOARD
 } GamePhase;
 
