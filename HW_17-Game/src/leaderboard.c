@@ -80,10 +80,10 @@ static int compareEntries(const void* a, const void* b) {
 bool addLeaderboardEntry(LeaderboardEntry* entries, int* count, const char* name, int score) {
     if (!isHighScore(entries, *count, score)) return false;
 
-  /* Обрезаем до 10 */
+    /* Если таблица заполнена, обрезаем до 9 (переписываем последнюю запись) */
     if (*count >= MAX_LEADERBOARD) {
         *count = MAX_LEADERBOARD - 1;
-    }    
+    }
     /* Добавляем новую запись */
     strncpy(entries[*count].name, name, NAME_LENGTH - 1);
     entries[*count].name[NAME_LENGTH - 1] = '\0';
