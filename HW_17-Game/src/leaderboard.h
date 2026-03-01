@@ -5,6 +5,7 @@
 
 #define MAX_LEADERBOARD 10
 #define NAME_LENGTH 20
+#define LEADER_PATH ".local/share/2048/scores.txt"
 
 typedef struct {
     char name[NAME_LENGTH];

@@ -20,7 +20,7 @@ static const char* getHomeDir(void) {
 const char* getLeaderboardPath(void) {
     static char path[512];
     const char* home = getHomeDir();
-    snprintf(path, sizeof(path), "%s/.local/share/2048/scores.txt", home);
+    snprintf(path, sizeof(path), "%s/%s", home, LEADER_PATH);
     return path;
 }
 
