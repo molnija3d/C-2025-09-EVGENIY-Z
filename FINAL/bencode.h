@@ -1,0 +1,40 @@
+#ifndef BENCODE_H
+#define BENCODE_H
+
+#include <stdint.h>
+#include <stddef.h>
+
+typedef enum {
+    BEN_STRING,
+    BEN_INT,
+    BEN_LIST,
+    BEN_DICT
+} ben_type_t;
+
+typedef struct ben_obj {
+    ben_type_t type;
+    union {
+        struct { uint8_t *data; size_t len; } string;
+        int64_t integer;
+        struct { struct ben_obj *items; size_t count; } list;
+        struct { struct ben_pair *pairs; size_t count; } dict;
+    } value;
+} ben_obj_t;
+
+typedef struct ben_pair {
+    char *key;          // ключ как null-терминированная строка (для удобства)
+    size_t key_len;
+    ben_obj_t *value;
+} ben_pair_t;
+
+// Декодирование
+ben_obj_t *bencode_decode(const uint8_t *data, size_t size);
+void bencode_free(ben_obj_t *obj);
+ben_obj_t *bencode_dict_get(const ben_obj_t *dict, const char *key);
+const uint8_t *bencode_string_data(const ben_obj_t *obj, size_t *len);
+int64_t bencode_int_value(const ben_obj_t *obj);
+
+// Кодирование (возвращает новый буфер, который нужно освободить через free)
+uint8_t *bencode_encode(const ben_obj_t *obj, size_t *out_len);
+
+#endif
