@@ -1,6 +1,12 @@
 #ifndef TORRENT_H
 #define TORRENT_H
 
+#define _POSIX_C_SOURCE 200809L
+#include "bencode.h"
+#include "utils.h"
+#include <string.h>
+#include <openssl/sha.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
 

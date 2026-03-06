@@ -1,11 +1,4 @@
-#define _POSIX_C_SOURCE 200809L
 #include "utils.h"
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 
 volatile int running = 1;
 

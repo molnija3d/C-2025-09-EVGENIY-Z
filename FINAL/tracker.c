@@ -1,10 +1,4 @@
-#include <stdint.h> 
-#include <curl/curl.h>
-#include <string.h>
-#include <stdlib.h>
 #include "tracker.h"
-#include "bencode.h"
-#include "utils.h"
 
 // Структура для накопления данных ответа
 struct memory {
@@ -45,7 +39,8 @@ static char *url_encode_info_hash(const uint8_t *hash) {
 static void generate_peer_id(char *peer_id) {
     // Пример: -TU0001-123456789012
     // Первые 8 символов фиксированы, остальные случайные цифры
-    const char *prefix = "-TU0001-";
+    const char *prefix = "-qB4390-";
+    //const char *prefix = "-TU0001-";
     strcpy(peer_id, prefix);
     for (int i = 8; i < 20; i++) {
         peer_id[i] = '0' + (rand() % 10);
@@ -79,8 +74,10 @@ int tracker_get_peers(const torrent_t *tor, peer_t **peers_out) {
 
     // Параметры запроса
     char url[2048];
+
+
     snprintf(url, sizeof(url),
-             "%s?info_hash=%s&peer_id=%s&port=0&uploaded=0&downloaded=0&left=%llu&compact=1&event=started",
+             "%s?info_hash=%s&peer_id=%s&port=60703&uploaded=0&downloaded=0&left=%llu&compact=1&event=started",
              tor->announce ? tor->announce : "",
              info_hash_enc,
              peer_id,
@@ -90,7 +87,7 @@ int tracker_get_peers(const torrent_t *tor, peer_t **peers_out) {
     free(info_hash_enc);
 
     LOG_DEBUG("Tracker URL: %s", url);
-
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "qBittorrent/4.3.9");    
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
@@ -141,6 +138,9 @@ int tracker_get_peers(const torrent_t *tor, peer_t **peers_out) {
     for (int i = 0; i < peer_count; i++) {
         memcpy(&(*peers_out)[i].ip, peers_data + i*6, 4);
         memcpy(&(*peers_out)[i].port, peers_data + i*6 + 4, 2);
+        char ip_buff[16] ;
+        ip_int32_to_string( (*peers_out)[i].ip, ip_buff);
+        LOG_INFO("IP:PORT %s:%d\r\n",ip_buff,ntohs((*peers_out)[i].port));
         // Данные уже в сетевом порядке, оставляем как есть
     }
 
@@ -152,4 +152,11 @@ cleanup:
     free(chunk.data);
 
     return peer_count;
+}
+
+void ip_int32_to_string(uint32_t ip_net, char *buffer) {
+    struct in_addr addr;
+    addr.s_addr = ip_net;          // ожидается, что ip_net уже в сетевом порядке
+    char *result = inet_ntoa(addr);
+    strcpy(buffer, result);
 }

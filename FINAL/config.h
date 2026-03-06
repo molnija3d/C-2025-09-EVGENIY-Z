@@ -1,6 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define _POSIX_C_SOURCE 200809L
 typedef struct {
     char *input_file;      // путь к .torrent файлу
     char *watch_dir;       // директория для отслеживания

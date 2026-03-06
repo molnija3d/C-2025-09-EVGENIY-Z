@@ -1,14 +1,4 @@
 #include "network.h"
-#include "utils.h"
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <poll.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-#include <fcntl.h>
 
 int tcp_connect_timeout(uint32_t ip, uint16_t port, int timeout_ms) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);

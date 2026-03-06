@@ -1,12 +1,15 @@
-#define _POSIX_C_SOURCE 200809L
 #ifndef PEER_H
 #define PEER_H
 
+#define _POSIX_C_SOURCE 200809L
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
-
+#include <string.h>
+#include <arpa/inet.h>
 #include "torrent.h"
+#include "network.h"
+#include "utils.h"
 
 typedef struct {
     uint32_t ip;   // в сетевом порядке (big-endian)

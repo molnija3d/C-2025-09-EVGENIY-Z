@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wpedantic -std=c11 -Wall -Wextra -g -I.
+CFLAGS = -Wpedantic -std=c11 -Wall -Wextra -g -I. 
 LDFLAGS = -lssl -lcrypto -lcurl 
 
 SRCS = main.c utils.c bencode.c torrent.c tracker.c network.c peer.c

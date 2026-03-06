@@ -97,8 +97,8 @@ int main(int argc, char **argv) {
     int peer_count = tracker_get_peers(&tor, &peers);
     
 if (peer_count > 0) {
-    // Берём первого пира
-    peer_t p = peers[0];
+    // Берём последий пир из списка
+    peer_t p = peers[peer_count - 1];
     char ip_str[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &p.ip, ip_str, sizeof(ip_str));
     uint16_t port = ntohs(p.port);

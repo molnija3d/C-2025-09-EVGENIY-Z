@@ -1,9 +1,19 @@
-#define _POSIX_C_SOURCE 200809L
 #ifndef NETWORK_H
 #define NETWORK_H
 
+#define _POSIX_C_SOURCE 200809L
 #include <stdint.h>
 #include <stddef.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <poll.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include "utils.h"
 
 // Подключение к пиру по IP и порту с таймаутом (в миллисекундах)
 // Возвращает сокет или -1 при ошибке

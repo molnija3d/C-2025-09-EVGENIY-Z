@@ -1,10 +1,4 @@
 #include "bencode.h"
-#include "utils.h"
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <assert.h>
 
 static const uint8_t *parse_int(const uint8_t *ptr, const uint8_t *end, ben_obj_t *obj);
 static const uint8_t *parse_string(const uint8_t *ptr, const uint8_t *end, ben_obj_t *obj);

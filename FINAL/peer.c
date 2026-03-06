@@ -1,8 +1,4 @@
 #include "peer.h"
-#include "network.h"
-#include "utils.h"
-#include <string.h>
-#include <arpa/inet.h>
 
 #define BT_PROTOCOL "BitTorrent protocol"
 #define BT_PROTOCOL_LEN 19
