@@ -85,7 +85,7 @@ int tracker_get_peers(const torrent_t *tor, peer_t **peers_out) {
              info_hash_enc,
              peer_id,
              (unsigned long long)tor->total_length);
-    printf("URL string: %s\r\n",url);
+    LOG_INFO("URL: %s\r\n",url);
 
     free(info_hash_enc);
 

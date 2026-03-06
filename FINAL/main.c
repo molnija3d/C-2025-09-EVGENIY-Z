@@ -9,6 +9,7 @@
 #include "torrent.h"
 #include "peer.h"
 #include "tracker.h"
+#include "network.h"
 
 void parse_args(int argc, char **argv, config_t *cfg) {
     memset(cfg, 0, sizeof(config_t));
@@ -94,6 +95,35 @@ int main(int argc, char **argv) {
 
     peer_t *peers = NULL;
     int peer_count = tracker_get_peers(&tor, &peers);
+    
+if (peer_count > 0) {
+    // Берём первого пира
+    peer_t p = peers[0];
+    char ip_str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &p.ip, ip_str, sizeof(ip_str));
+    uint16_t port = ntohs(p.port);
+    LOG_INFO("Connecting to peer %s:%u", ip_str, port);
+
+    int sock = tcp_connect_timeout(p.ip, p.port, 10000);
+    if (sock >= 0) {
+        LOG_INFO("Connected, performing handshake...");
+        uint8_t peer_id[20];
+        if (peer_handshake(sock, &tor, peer_id) == 0) {
+            LOG_INFO("Handshake successful, peer ID: %02x%02x...", peer_id[0], peer_id[1]);
+            // Далее можно отправить interested и попытаться получить кусок
+            // Пока просто закроем соединение
+        } else {
+            LOG_ERROR("Handshake failed");
+        }
+        close(sock);
+    } else {
+        LOG_ERROR("Connection failed");
+    }
+    free(peers);
+}
+
+
+    /*
     if (peer_count > 0) {
         LOG_INFO("Received %d peers from tracker", peer_count);
         for (int i = 0; i < peer_count; i++) {
@@ -106,6 +136,7 @@ int main(int argc, char **argv) {
     } else {
         LOG_ERROR("No peers received or error");
     }
+    */
     // Освобождение
     torrent_free(&tor);
     free_config(&cfg);
