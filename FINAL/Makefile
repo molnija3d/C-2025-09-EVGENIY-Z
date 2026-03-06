@@ -21,6 +21,6 @@ $(TARGET_SANITIZE): $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET) $(TARGET_SANITIZE) 
 
 .PHONY: clean
