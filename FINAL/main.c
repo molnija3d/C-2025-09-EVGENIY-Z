@@ -7,6 +7,8 @@
 #include "config.h"
 #include "utils.h"
 #include "torrent.h"
+#include "peer.h"
+#include "tracker.h"
 
 void parse_args(int argc, char **argv, config_t *cfg) {
     memset(cfg, 0, sizeof(config_t));
@@ -15,25 +17,25 @@ void parse_args(int argc, char **argv, config_t *cfg) {
     int opt;
     while ((opt = getopt(argc, argv, "f:d:o:O:")) != -1) {
         switch (opt) {
-            case 'f':
-                cfg->input_file = strdup(optarg);
-                cfg->use_stdin = 0;
-                break;
-            case 'd':
-                cfg->watch_dir = strdup(optarg);
-                cfg->use_stdin = 0;
-                break;
-            case 'o':
-                cfg->output_file = strdup(optarg);
-                cfg->use_stdout = 0;
-                break;
-            case 'O':
-                cfg->extract_dir = strdup(optarg);
-                cfg->use_stdout = 0;
-                break;
-            default:
-                fprintf(stderr, "Usage: %s [-f file.torrent | -d dir] [-o file | -O dir]\n", argv[0]);
-                exit(1);
+        case 'f':
+            cfg->input_file = strdup(optarg);
+            cfg->use_stdin = 0;
+            break;
+        case 'd':
+            cfg->watch_dir = strdup(optarg);
+            cfg->use_stdin = 0;
+            break;
+        case 'o':
+            cfg->output_file = strdup(optarg);
+            cfg->use_stdout = 0;
+            break;
+        case 'O':
+            cfg->extract_dir = strdup(optarg);
+            cfg->use_stdout = 0;
+            break;
+        default:
+            fprintf(stderr, "Usage: %s [-f file.torrent | -d dir] [-o file | -O dir]\n", argv[0]);
+            exit(1);
         }
     }
 }
@@ -52,7 +54,7 @@ int main(int argc, char **argv) {
 
     torrent_t tor;
 
- if (cfg.use_stdin) {
+    if (cfg.use_stdin) {
         // ... реализация чтения из stdin (пропустим для краткости)
         LOG_ERROR("stdin input not implemented yet");
         free_config(&cfg);
@@ -74,7 +76,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
- // Выводим информацию
+// Выводим информацию
     LOG_INFO("Announce: %s", tor.announce ? tor.announce : "(none)");
     LOG_INFO("Name: %s", tor.name);
     LOG_INFO("Total length: %llu bytes", (unsigned long long)tor.total_length);
@@ -90,6 +92,20 @@ int main(int argc, char **argv) {
         printf(" (%llu bytes)\n", (unsigned long long)tor.files[i].length);
     }
 
+    peer_t *peers = NULL;
+    int peer_count = tracker_get_peers(&tor, &peers);
+    if (peer_count > 0) {
+        LOG_INFO("Received %d peers from tracker", peer_count);
+        for (int i = 0; i < peer_count; i++) {
+            char ip_str[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &peers[i].ip, ip_str, sizeof(ip_str));
+            uint16_t port = ntohs(peers[i].port);
+            LOG_INFO("Peer %d: %s:%u", i, ip_str, port);
+        }
+        free(peers);
+    } else {
+        LOG_ERROR("No peers received or error");
+    }
     // Освобождение
     torrent_free(&tor);
     free_config(&cfg);
