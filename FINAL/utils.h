@@ -12,7 +12,7 @@
 #include <sys/stat.h>
 #include <stdint.h>
 
-#define LOG_ERROR(fmt, ...) fprintf(stderr, "[ERROR] " fmt "\n", ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...) fprintf(stderr, "[ERROR] %s:%d " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #define LOG_INFO(fmt, ...)  fprintf(stdout, "[INFO] " fmt "\n", ##__VA_ARGS__)
 #ifdef DEBUG
 #define LOG_DEBUG(fmt, ...) fprintf(stdout, "[DEBUG] " fmt "\n", ##__VA_ARGS__)
@@ -31,6 +31,8 @@ void setup_signals(void);
 // Чтение всего файла в память
 size_t read_file(const char *path, void **data);
 
-
+/*
 void url_encode(const uint8_t *data, size_t len, char *out);
+*/
+
 #endif

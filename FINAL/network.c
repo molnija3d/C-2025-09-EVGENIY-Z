@@ -134,6 +134,7 @@ int recv_full_timeout(int sock, void *buf, size_t len, int timeout_ms) {
 int recv_message(int sock, uint8_t **payload, size_t *payload_len, int timeout_ms) {
     uint32_t len_prefix;
     if (recv_full_timeout(sock, &len_prefix, 4, timeout_ms) < 0) {
+            LOG_ERROR("Recieve err 1");
         return -1;
     }
     uint32_t msg_len = ntohl(len_prefix);
@@ -145,6 +146,7 @@ int recv_message(int sock, uint8_t **payload, size_t *payload_len, int timeout_m
     }
     *payload = xmalloc(msg_len);
     if (recv_full_timeout(sock, *payload, msg_len, timeout_ms) < 0) {
+            LOG_ERROR("Recieve err 2");
         free(*payload);
         return -1;
     }

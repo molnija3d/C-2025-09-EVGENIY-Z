@@ -22,8 +22,8 @@ static size_t write_callback(void *contents, size_t size, size_t nmemb, void *us
     return realsize;
 }
 
-// Преобразование 20-байтного info_hash в URL-encoded строку
-static char *url_encode_info_hash(const uint8_t *hash) {
+// Преобразование 20-байтного значения (info_hash, peer_id) в URL-encoded строку
+char *url_encode(const uint8_t *hash) {
     char *encoded = malloc(3*20 + 1); // каждый байт кодируется как %XX + нуль
     if (!encoded) return NULL;
     char *p = encoded;
@@ -63,26 +63,30 @@ int tracker_get_peers(const torrent_t *tor, const uint8_t *peer_id, peer_t **pee
     }
 
     // Формируем URL
-    char *info_hash_enc = url_encode_info_hash(tor->info_hash);
+    char *info_hash_enc = url_encode(tor->info_hash);
     if (!info_hash_enc) {
         curl_easy_cleanup(curl);
         return -1;
     }
 
+    // Формируем peer_id
+    char *peer_id_enc = url_encode(peer_id);
+    if (!peer_id_enc) {
+        curl_easy_cleanup(curl);
+        return -1;
+    }
     //  char peer_id[21];
     //  generate_peer_id(peer_id);
 
     // Параметры запроса
     char url[2048];
 
-
     snprintf(url, sizeof(url),
              "%s?info_hash=%s&peer_id=%s&port=60703&uploaded=0&downloaded=0&left=%llu&compact=1&event=started",
              tor->announce ? tor->announce : "",
              info_hash_enc,
-             peer_id,
+             peer_id_enc,
              (unsigned long long)tor->total_length);
-    LOG_INFO("URL: %s\r\n",url);
 
     free(info_hash_enc);
 

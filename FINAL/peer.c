@@ -30,6 +30,7 @@ int peer_handshake(int sock, const torrent_t *tor, const uint8_t *my_peer_id, ui
         return -1;
     }
 
+
     // Проверяем info_hash
     if (memcmp(hs_in + 28, tor->info_hash, 20) != 0) {
         LOG_ERROR("Info hash mismatch in handshake");
@@ -49,6 +50,7 @@ int peer_send_interested(int sock) {
 }
 
 int peer_send_request(int sock, uint32_t index, uint32_t begin, uint32_t length) {
+
     uint8_t msg[17];
     uint32_t len = htonl(13); // payload length (без length поля)
     memcpy(msg, &len, 4);
@@ -149,12 +151,26 @@ int peer_wait_for_unchoke(peer_connection_t *peer, int timeout_ms) {
             break;
         case 4: // have
             if (payload_len >= 4) {
-                uint32_t index;
-                memcpy(&index, payload, 4);
-                index = ntohl(index);
-                // Здесь можно обновить битовое поле (пока пропустим)
-                LOG_DEBUG("Received have for piece %u", index);
+                uint32_t index = ntohl(*(uint32_t*)payload);
+                if (peer->bitfield) {
+                    size_t byte = index / 8;
+                    if (byte < peer->bitfield_len) {
+                        peer->bitfield[byte] |= 1 << (7 - (index % 8));
+                    } else {
+                        // можно расширить битовое поле, но для простоты проигнорируем
+                        LOG_DEBUG("RECIEVED \"HAVE\" for a piece %u beyond current bitfield", index);
+                    }
+                }
             }
+            /*
+                      if (payload_len >= 4) {
+                          uint32_t index;
+                          memcpy(&index, payload, 4);
+                          index = ntohl(index);
+                          // Здесь можно обновить битовое поле (пока пропустим)
+                          LOG_DEBUG("Received have for piece %u", index);
+                      }
+                      */
             break;
         case 5: // bitfield
             // Сохраняем битовое поле (копируем)
@@ -188,7 +204,12 @@ int peer_receive_block(int sock, uint32_t expected_index, uint32_t expected_begi
 
     while (1) {
         if (peer_read_message(sock, &msg_id, &payload, &payload_len, timeout_ms) < 0) {
+            LOG_ERROR("Peer read message failed...");
             return -1;
+        }
+        if (msg_id == 0xFF) { // keep-alive
+            free(payload);
+            continue;
         }
         if (msg_id == 7) { // piece
             if (payload_len < 8) {
@@ -214,6 +235,7 @@ int peer_receive_block(int sock, uint32_t expected_index, uint32_t expected_begi
                 // Продолжаем ждать нужный
             }
         } else {
+            LOG_DEBUG("Received msg_id=%d while waiting for block", msg_id);
             // Обрабатываем другие сообщения: choke, unchoke, have, keep-alive
             // Если получили choke — возможно, пир нас задушил, надо выйти с ошибкой
             if (msg_id == 0) { // choke
@@ -226,4 +248,10 @@ int peer_receive_block(int sock, uint32_t expected_index, uint32_t expected_begi
             free(payload);
         }
     }
+}
+
+void peer_close(peer_connection_t *peer) {
+    if (peer->sock >= 0) close(peer->sock);
+    free(peer->bitfield);
+    memset(peer, 0, sizeof(*peer));
 }

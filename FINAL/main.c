@@ -99,9 +99,11 @@ int main(int argc, char **argv) {
     peer_t *peers = NULL;
     int peer_count = tracker_get_peers(&tor, my_peer_id, &peers);
 
+    
     if (peer_count > 0) {
         // Берём последий пир из списка
         peer_t p = peers[peer_count - 1];
+        //    peer_t p = peers[0];
         char ip_str[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &p.ip, ip_str, sizeof(ip_str));
         uint16_t port = ntohs(p.port);
@@ -127,6 +129,11 @@ int main(int argc, char **argv) {
                         if (st) {
                             int success = 1;
                             for (uint32_t i = 0; i < tor.num_pieces && running; i++) {
+
+                                if (!peer_has_piece(&peer, i)) {
+                                    LOG_INFO("Peer missing piece %u, skipping", i);
+                                    continue; // этот кусок будем запрашивать у другого пира
+                                }
                                 uint32_t piece_len = piece_size(&tor, i);
                                 uint8_t *buf = xmalloc(piece_len);
                                 uint32_t offset = 0;
