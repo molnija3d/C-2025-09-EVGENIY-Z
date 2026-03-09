@@ -11,6 +11,8 @@
 #include "tracker.h"
 #include "storage.h"
 #include "network.h"
+#define IS_DONE(pieces, idx) ((pieces)[(idx)/8] & (1 << (7 - ((idx)%8))))
+#define MARK_DONE(pieces, idx) ((pieces)[(idx)/8]  |= (1<< (7 - ((idx)%8))))
 
 void parse_args(int argc, char **argv, config_t *cfg) {
     memset(cfg, 0, sizeof(config_t));
@@ -98,84 +100,123 @@ int main(int argc, char **argv) {
 
     peer_t *peers = NULL;
     int peer_count = tracker_get_peers(&tor, my_peer_id, &peers);
+    if (peer_count <= 0) {
+        LOG_ERROR("No peers received from tracker");
+        torrent_free(&tor);
+        free_config(&cfg);
+        return 1;
+    }
 
-    
-    if (peer_count > 0) {
-        // Берём последий пир из списка
-        peer_t p = peers[peer_count - 1];
-        //    peer_t p = peers[0];
+
+// Массив для отметки скачанных кусков
+    uint8_t *pieces_done = xcalloc((tor.num_pieces + 7) / 8, 1);
+    int pieces_left = tor.num_pieces;
+
+
+    for (int peer_idx = 0; peer_idx < peer_count && pieces_left > 0 && running; peer_idx++) {
+        peer_t p = peers[peer_idx];
         char ip_str[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &p.ip, ip_str, sizeof(ip_str));
         uint16_t port = ntohs(p.port);
-        LOG_INFO("Connecting to peer %s:%u", ip_str, port);
+        LOG_INFO("Trying peer %s:%u (%d/%d)", ip_str, port, peer_idx+1, peer_count);
 
         int sock = tcp_connect_timeout(p.ip, p.port, 10000);
-        if (sock >= 0) {
-            LOG_INFO("Connected, performing handshake...");
-
-            peer_connection_t peer = {
-                .sock = sock,
-                .choked = 1,
-                .bitfield = NULL,
-                .bitfield_len = 0
-            };
-            uint8_t peer_id_resp[20];
-            if (peer_handshake(sock, &tor, my_peer_id, peer_id_resp) == 0) {
-                LOG_INFO("Handshake successful, peer ID: %02x%02x...", my_peer_id[0], my_peer_id[1]);
-                LOG_INFO("             response peer ID: %02x%02x...", peer_id_resp[0], peer_id_resp[1]);
-                if (peer_send_interested(sock) == 0) {
-                    if (peer_wait_for_unchoke(&peer, 30000) == 0) {
-                        storage_t *st = storage_open(&cfg, &tor);
-                        if (st) {
-                            int success = 1;
-                            for (uint32_t i = 0; i < tor.num_pieces && running; i++) {
-
-                                if (!peer_has_piece(&peer, i)) {
-                                    LOG_INFO("Peer missing piece %u, skipping", i);
-                                    continue; // этот кусок будем запрашивать у другого пира
-                                }
-                                uint32_t piece_len = piece_size(&tor, i);
-                                uint8_t *buf = xmalloc(piece_len);
-                                uint32_t offset = 0;
-                                while (offset < piece_len && success) {
-                                    uint32_t block_len = (piece_len - offset) > BLOCK_SIZE ? BLOCK_SIZE : (piece_len - offset);
-                                    if (peer_send_request(sock, i, offset, block_len) < 0) {
-                                        LOG_ERROR("Failed to send request for piece %u block %u", i, offset);
-                                        success = 0;
-                                        break;
-                                    }
-                                    if (peer_receive_block(sock, i, offset, buf + offset, block_len, 30000) < 0) {
-                                        LOG_ERROR("Failed to receive block %u for piece %u", offset, i);
-                                        success = 0;
-                                        break;
-                                    }
-                                    offset += block_len;
-                                }
-                                if (success && verify_piece(&tor, i, buf)) {
-                                    storage_write(st, i, buf, piece_len);
-                                    LOG_INFO("Piece %u done", i);
-                                } else {
-                                    LOG_ERROR("Failed to download piece %u", i);
-                                    success = 0;
-                                }
-                                free(buf);
-                                if (!success) break;
-                            }
-                            if (success) LOG_INFO("Download completed");
-                            storage_close(st);
-                        }
-                    }
-                }
-            } else {
-                LOG_ERROR("Handshake failed");
-            }
-            close(sock);
-        } else {
-            LOG_ERROR("Connection failed");
+        if (sock < 0) {
+            LOG_WARN("Failed to connect to peer");
+            continue;
         }
-        free(peers);
+
+        peer_connection_t peer = {
+            .sock = sock,
+            .choked = 1,
+            .bitfield = NULL,
+            .bitfield_len = 0
+        };
+
+        uint8_t peer_id_resp[20];
+        if (peer_handshake(sock, &tor, my_peer_id, peer_id_resp) < 0) {
+            LOG_WARN("Handshake failed");
+            close(sock);
+            continue;
+        }
+
+        LOG_INFO("Handshake successful with peer, waiting for unchoke...");
+        if (peer_send_interested(sock) < 0) {
+            LOG_WARN("Failed to send interested");
+            close(sock);
+            continue;
+        }
+
+        if (peer_wait_for_unchoke(&peer, 30000) < 0) {
+            LOG_WARN("Failed to get unchoke");
+            peer_close(&peer);
+            continue;
+        }
+
+        // Получили unchoke, считаем, что есть bitfield, можно начинать загрузку недостающих кусков
+        // Открываем хранилишще
+        storage_t *st = storage_open(&cfg, &tor);
+        if (!st) {
+            LOG_ERROR("Failed to open storage");
+            peer_close(&peer);
+            continue;
+        }
+
+        // Сканируем все куски, которые ещё не скачаны
+        for (uint32_t i = 0; i < tor.num_pieces && pieces_left > 0 && running; i++) {
+            if (IS_DONE(pieces_done, i)) continue; // уже есть
+
+            if (!peer_has_piece(&peer, i)) {
+                LOG_DEBUG("Peer lacks piece %u", i);
+                continue;
+            }
+
+            uint32_t piece_len = piece_size(&tor, i);
+            uint8_t *buf = xmalloc(piece_len);
+            int piece_ok = 1;
+
+            uint32_t offset = 0;
+            while (offset < piece_len && piece_ok && running) {
+                uint32_t block_len = (piece_len - offset) > BLOCK_SIZE ? BLOCK_SIZE : (piece_len - offset);
+                if (peer_send_request(sock, i, offset, block_len) < 0) {
+                    LOG_ERROR("Failed to send request for piece %u block %u", i, offset);
+                    piece_ok = 0;
+                    break;
+                }
+                if (peer_receive_block(sock, i, offset, buf + offset, block_len, 30000) < 0) {
+                    LOG_ERROR("Failed to receive block %u for piece %u", offset, i);
+                    piece_ok = 0;
+                    break;
+                }
+                offset += block_len;
+            }
+
+            if (piece_ok && verify_piece(&tor, i, buf)) {
+                storage_write(st, i, buf, piece_len);
+                // Помечаем кусок как скачанный
+               // pieces_done[i/8] |= (1 << (7 - (i%8)));
+                MARK_DONE(pieces_done, i);
+                pieces_left--;
+                LOG_INFO("Piece %u done, %d left", i, pieces_left);
+            } else {
+                LOG_ERROR("Failed to download piece %u", i);
+                // не помечаем, возможно другой пир скачает
+            }
+            free(buf);
+        }
+
+        storage_close(st);
+        peer_close(&peer);
     }
 
+    if (pieces_left == 0) {
+        LOG_INFO("All pieces downloaded successfully!");
+    } else {
+        LOG_ERROR("Download incomplete, %d pieces missing", pieces_left);
+    }
+
+    free(pieces_done);
+    free(peers);
 
     // Освобождение
     torrent_free(&tor);

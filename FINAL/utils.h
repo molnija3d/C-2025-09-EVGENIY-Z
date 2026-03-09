@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 #define LOG_ERROR(fmt, ...) fprintf(stderr, "[ERROR] %s:%d " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...) fprintf(stderr, "[WARNING] %s:%d " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #define LOG_INFO(fmt, ...)  fprintf(stdout, "[INFO] " fmt "\n", ##__VA_ARGS__)
 #ifdef DEBUG
 #define LOG_DEBUG(fmt, ...) fprintf(stdout, "[DEBUG] " fmt "\n", ##__VA_ARGS__)
