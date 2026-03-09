@@ -14,6 +14,10 @@
 
 // Получить список пиров от трекера
 // Возвращает количество пиров (или -1 при ошибке)
-int tracker_get_peers(const torrent_t *tor, peer_t **peers_out);
-void ip_int32_to_string(uint32_t ip_net, char *buffer);
+//int tracker_get_peers(const torrent_t *tor, peer_t **peers_out);
+int tracker_get_peers(const torrent_t *tor, const uint8_t *peer_id, peer_t **peers_out);
+
+// Генерация случайного peer_id (20 байт в виде строки)
+void generate_peer_id(uint8_t *peer_id);
+//void ip_int32_to_string(uint32_t ip_net, char *buffer);
 #endif

@@ -54,3 +54,10 @@ size_t read_file(const char *path, void **data) {
     fclose(f);
     return size;
 }
+
+void url_encode(const uint8_t *data, size_t len, char *out) {
+    for (size_t i = 0; i < len; i++) {
+        sprintf(out + i*3, "%%%02X", data[i]);
+    }
+    out[len*3] = '\0';
+}

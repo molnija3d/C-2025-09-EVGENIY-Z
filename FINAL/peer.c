@@ -1,10 +1,6 @@
 #include "peer.h"
 
-#define BT_PROTOCOL "BitTorrent protocol"
-#define BT_PROTOCOL_LEN 19
-#define HANDSHAKE_SIZE 68
-
-int peer_handshake(int sock, const torrent_t *tor, uint8_t *peer_id_out) {
+int peer_handshake(int sock, const torrent_t *tor, const uint8_t *my_peer_id, uint8_t *peer_id_out) {
     uint8_t hs_out[HANDSHAKE_SIZE];
     uint8_t hs_in[HANDSHAKE_SIZE];
 
@@ -14,8 +10,9 @@ int peer_handshake(int sock, const torrent_t *tor, uint8_t *peer_id_out) {
     // 8 зарезервированных байт оставляем нулями (можно установить биты расширений позже)
     memcpy(hs_out + 28, tor->info_hash, 20);
     // peer_id: можно использовать случайный, но для теста возьмём фиксированный
-    const char *test_peer_id = "-TU0001-123456789012";
-    memcpy(hs_out + 48, test_peer_id, 20);
+    //  const char *test_peer_id = "-TU0001-123456789012";
+    //   memcpy(hs_out + 48, test_peer_id, 20);
+    memcpy(hs_out + 48, my_peer_id, 20);
 
     if (send_full_timeout(sock, hs_out, HANDSHAKE_SIZE, 10000) < 0) {
         LOG_ERROR("Failed to send handshake");
@@ -123,6 +120,109 @@ int peer_receive_piece(int sock, uint32_t expected_index, uint8_t *buffer, size_
             // Обрабатываем другие сообщения (choke, unchoke, have, bitfield) если нужно
             // Пока просто игнорируем
             LOG_DEBUG("Ignored message id %d", msg_id);
+            free(payload);
+        }
+    }
+}
+
+// Функция ожидания unchoke с обработкой промежуточных сообщений (bitfield, have и т.д.)
+int peer_wait_for_unchoke(peer_connection_t *peer, int timeout_ms) {
+    while (running && peer->choked) {
+        uint8_t msg_id;
+        uint8_t *payload;
+        size_t payload_len;
+        int ret = peer_read_message(peer->sock, &msg_id, &payload, &payload_len, timeout_ms);
+        if (ret < 0) return -1;
+        if (msg_id == 0xFF) { // keep-alive
+            free(payload);
+            continue;
+        }
+        // Обработка различных сообщений
+        switch (msg_id) {
+        case 0: // choke
+            peer->choked = 1;
+            LOG_DEBUG("Received choke");
+            break;
+        case 1: // unchoke
+            peer->choked = 0;
+            LOG_DEBUG("Received unchoke");
+            break;
+        case 4: // have
+            if (payload_len >= 4) {
+                uint32_t index;
+                memcpy(&index, payload, 4);
+                index = ntohl(index);
+                // Здесь можно обновить битовое поле (пока пропустим)
+                LOG_DEBUG("Received have for piece %u", index);
+            }
+            break;
+        case 5: // bitfield
+            // Сохраняем битовое поле (копируем)
+            peer->bitfield = xmalloc(payload_len);
+            memcpy(peer->bitfield, payload, payload_len);
+            peer->bitfield_len = payload_len;
+            LOG_DEBUG("Received bitfield (%zu bytes)", payload_len);
+            break;
+        default:
+            LOG_DEBUG("Ignored message id %d", msg_id);
+            break;
+        }
+        free(payload);
+        if (!peer->choked) break; // выходим, если расчокнули
+    }
+    return peer->choked ? -1 : 0;
+}
+
+int peer_has_piece(peer_connection_t *peer, uint32_t index) {
+    if (!peer->bitfield) return 1; // нет информации - считаем, что есть
+    size_t byte = index / 8;
+    if (byte >= peer->bitfield_len) return 0;
+    return (peer->bitfield[byte] >> (7 - (index % 8))) & 1;
+}
+
+int peer_receive_block(int sock, uint32_t expected_index, uint32_t expected_begin,
+                       uint8_t *buffer, size_t length, int timeout_ms) {
+    uint8_t *payload;
+    size_t payload_len;
+    uint8_t msg_id;
+
+    while (1) {
+        if (peer_read_message(sock, &msg_id, &payload, &payload_len, timeout_ms) < 0) {
+            return -1;
+        }
+        if (msg_id == 7) { // piece
+            if (payload_len < 8) {
+                free(payload);
+                return -1;
+            }
+            uint32_t index, begin;
+            memcpy(&index, payload, 4);
+            memcpy(&begin, payload + 4, 4);
+            index = ntohl(index);
+            begin = ntohl(begin);
+            size_t block_len = payload_len - 8;
+
+            if (index == expected_index && begin == expected_begin && block_len == length) {
+                memcpy(buffer, payload + 8, block_len);
+                free(payload);
+                return 0;
+            } else {
+                // Не тот блок — возможно, пришёл блок от другого запроса (если мы отправляли несколько)
+                // В нашей последовательной модели это не должно происходить, но на всякий случай проигнорируем
+                LOG_DEBUG("Ignored piece %u:%u (expected %u:%u)", index, begin, expected_index, expected_begin);
+                free(payload);
+                // Продолжаем ждать нужный
+            }
+        } else {
+            // Обрабатываем другие сообщения: choke, unchoke, have, keep-alive
+            // Если получили choke — возможно, пир нас задушил, надо выйти с ошибкой
+            if (msg_id == 0) { // choke
+                LOG_DEBUG("Received choke while waiting for block");
+                free(payload);
+                return -1; // Пир задушил, прерываем
+            }
+            // Для простоты игнорируем остальные
+            LOG_DEBUG("Ignored message id %d while waiting for block", msg_id);
             free(payload);
         }
     }

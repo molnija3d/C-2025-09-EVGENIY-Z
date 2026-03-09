@@ -9,6 +9,7 @@
 #include "torrent.h"
 #include "peer.h"
 #include "tracker.h"
+#include "storage.h"
 #include "network.h"
 
 void parse_args(int argc, char **argv, config_t *cfg) {
@@ -92,51 +93,83 @@ int main(int argc, char **argv) {
         }
         printf(" (%llu bytes)\n", (unsigned long long)tor.files[i].length);
     }
+    uint8_t my_peer_id[20];
+    generate_peer_id(my_peer_id);
 
     peer_t *peers = NULL;
-    int peer_count = tracker_get_peers(&tor, &peers);
-    
-if (peer_count > 0) {
-    // Берём последий пир из списка
-    peer_t p = peers[peer_count - 1];
-    char ip_str[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &p.ip, ip_str, sizeof(ip_str));
-    uint16_t port = ntohs(p.port);
-    LOG_INFO("Connecting to peer %s:%u", ip_str, port);
+    int peer_count = tracker_get_peers(&tor, my_peer_id, &peers);
 
-    int sock = tcp_connect_timeout(p.ip, p.port, 10000);
-    if (sock >= 0) {
-        LOG_INFO("Connected, performing handshake...");
-        uint8_t peer_id[20];
-        if (peer_handshake(sock, &tor, peer_id) == 0) {
-            LOG_INFO("Handshake successful, peer ID: %02x%02x...", peer_id[0], peer_id[1]);
-            // Далее можно отправить interested и попытаться получить кусок
-            // Пока просто закроем соединение
-        } else {
-            LOG_ERROR("Handshake failed");
-        }
-        close(sock);
-    } else {
-        LOG_ERROR("Connection failed");
-    }
-    free(peers);
-}
-
-
-    /*
     if (peer_count > 0) {
-        LOG_INFO("Received %d peers from tracker", peer_count);
-        for (int i = 0; i < peer_count; i++) {
-            char ip_str[INET_ADDRSTRLEN];
-            inet_ntop(AF_INET, &peers[i].ip, ip_str, sizeof(ip_str));
-            uint16_t port = ntohs(peers[i].port);
-            LOG_INFO("Peer %d: %s:%u", i, ip_str, port);
+        // Берём последий пир из списка
+        peer_t p = peers[peer_count - 1];
+        char ip_str[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &p.ip, ip_str, sizeof(ip_str));
+        uint16_t port = ntohs(p.port);
+        LOG_INFO("Connecting to peer %s:%u", ip_str, port);
+
+        int sock = tcp_connect_timeout(p.ip, p.port, 10000);
+        if (sock >= 0) {
+            LOG_INFO("Connected, performing handshake...");
+
+            peer_connection_t peer = {
+                .sock = sock,
+                .choked = 1,
+                .bitfield = NULL,
+                .bitfield_len = 0
+            };
+            uint8_t peer_id_resp[20];
+            if (peer_handshake(sock, &tor, my_peer_id, peer_id_resp) == 0) {
+                LOG_INFO("Handshake successful, peer ID: %02x%02x...", my_peer_id[0], my_peer_id[1]);
+                LOG_INFO("             response peer ID: %02x%02x...", peer_id_resp[0], peer_id_resp[1]);
+                if (peer_send_interested(sock) == 0) {
+                    if (peer_wait_for_unchoke(&peer, 30000) == 0) {
+                        storage_t *st = storage_open(&cfg, &tor);
+                        if (st) {
+                            int success = 1;
+                            for (uint32_t i = 0; i < tor.num_pieces && running; i++) {
+                                uint32_t piece_len = piece_size(&tor, i);
+                                uint8_t *buf = xmalloc(piece_len);
+                                uint32_t offset = 0;
+                                while (offset < piece_len && success) {
+                                    uint32_t block_len = (piece_len - offset) > BLOCK_SIZE ? BLOCK_SIZE : (piece_len - offset);
+                                    if (peer_send_request(sock, i, offset, block_len) < 0) {
+                                        LOG_ERROR("Failed to send request for piece %u block %u", i, offset);
+                                        success = 0;
+                                        break;
+                                    }
+                                    if (peer_receive_block(sock, i, offset, buf + offset, block_len, 30000) < 0) {
+                                        LOG_ERROR("Failed to receive block %u for piece %u", offset, i);
+                                        success = 0;
+                                        break;
+                                    }
+                                    offset += block_len;
+                                }
+                                if (success && verify_piece(&tor, i, buf)) {
+                                    storage_write(st, i, buf, piece_len);
+                                    LOG_INFO("Piece %u done", i);
+                                } else {
+                                    LOG_ERROR("Failed to download piece %u", i);
+                                    success = 0;
+                                }
+                                free(buf);
+                                if (!success) break;
+                            }
+                            if (success) LOG_INFO("Download completed");
+                            storage_close(st);
+                        }
+                    }
+                }
+            } else {
+                LOG_ERROR("Handshake failed");
+            }
+            close(sock);
+        } else {
+            LOG_ERROR("Connection failed");
         }
         free(peers);
-    } else {
-        LOG_ERROR("No peers received or error");
     }
-    */
+
+
     // Освобождение
     torrent_free(&tor);
     free_config(&cfg);
