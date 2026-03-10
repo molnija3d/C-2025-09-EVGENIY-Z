@@ -252,7 +252,6 @@ int main(int argc, char **argv) {
         peer_close(&peer);
     }
 
-    // --- Завершение ---
     if (use_tar) {
         tar_writer_close((tar_writer_t*)out_ctx);
     } else {

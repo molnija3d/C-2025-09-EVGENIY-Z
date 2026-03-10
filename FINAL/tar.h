@@ -10,6 +10,7 @@
 #include "torrent.h"
 #include "utils.h"
 #define TAR_BLOCK_SIZE 512
+
 /* Формат заголовка ustar (512 байт) */
 typedef struct {
     char name[100];
@@ -31,23 +32,15 @@ typedef struct {
     char padding[12];
 } tar_header_t;
 
-/*
-typedef struct {
-    const torrent_t *tor;          // ссылка на торрент (не владеем)
-    FILE *out;                     // выходной поток
-    int current_file_index;        // индекс текущего файла в tor->files
-    uint64_t file_bytes_written;   // сколько байт текущего файла уже записано
-    uint64_t *file_offset;          // глобальное смещение начала текущего файла
-} tar_writer_t;
-*/
-
 /* Внутренняя структура для отслеживания текущего файла */
 typedef struct {
     const torrent_t *tor;          // ссылка на торрент (не владеем)
     FILE *out;                     // выходной поток
     int current_file_index;        // индекс текущего файла в tor->files
-    uint64_t file_bytes_written;   // сколько байт текущего файла уже записано
+    uint64_t file_bytes_written; // сколько байт текущего файла уже записано
+    uint64_t total_written;   // общее количество байт, записанных в архив (для расчёта паддинга)
 } tar_writer_t;
+
 /**
  * Создаёт контекст для записи tar-архива в указанный поток (обычно stdout).
  * @param out   Файловый поток для вывода (например, stdout)
@@ -72,4 +65,32 @@ void tar_writer_write(tar_writer_t *tw, uint32_t piece_index, const uint8_t *dat
  * @param tw    Контекст
  */
 void tar_writer_close(tar_writer_t *tw);
+
+/**
+ * Осуществляет выравнивание.
+ * @param tw    Контекст
+ */
+static void write_padding(tar_writer_t *tw);
+
+/**
+ * Формирует загаловок файла в архиве
+ * @param tw    Контекст tar-писателя
+ * @param path  путь файла
+ * @param size  размер
+*/
+static void write_header(tar_writer_t *tw, const char *path, uint64_t size);
+
+/**
+ * Проверяет контрольную сумму заголовка 
+ * @param *hder    Контекст tar-писателя
+*/
+static unsigned int calculate_checksum(const tar_header_t *hdr);
+
+/**
+ * Преобразует в строку число в 8-ричной системе
+ * @param val   значение
+ * @param *buf  выходной буфер
+ * @param size  размер
+*/
+static void oct_to_str(uint64_t val, char *buf, int size);
 #endif
