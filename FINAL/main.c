@@ -59,10 +59,20 @@ int main(int argc, char **argv) {
     torrent_t tor;
 
     if (cfg.use_stdin) {
-        // ... реализация чтения из stdin (пропустим для краткости)
-        LOG_ERROR("stdin input not implemented yet");
-        free_config(&cfg);
-        return 1;
+        uint8_t *data;
+        size_t size = read_stdin(&data);
+        if (size == 0) {
+            LOG_ERROR("Failed to read torrent from stdin");
+            free_config(&cfg);
+            return 1;
+        }
+        if (torrent_load_from_memory(data, size, &tor) != 0) {
+            LOG_ERROR("Failed to parse torrent from stdin");
+            free(data);
+            free_config(&cfg);
+            return 1;
+        }
+        free(data);
     } else if (cfg.input_file) {
         LOG_INFO("Loading torrent from %s", cfg.input_file);
         if (torrent_load(cfg.input_file, &tor) != 0) {
@@ -194,7 +204,7 @@ int main(int argc, char **argv) {
             if (piece_ok && verify_piece(&tor, i, buf)) {
                 storage_write(st, i, buf, piece_len);
                 // Помечаем кусок как скачанный
-               // pieces_done[i/8] |= (1 << (7 - (i%8)));
+                // pieces_done[i/8] |= (1 << (7 - (i%8)));
                 MARK_DONE(pieces_done, i);
                 pieces_left--;
                 LOG_INFO("Piece %u done, %d left", i, pieces_left);

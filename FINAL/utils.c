@@ -54,6 +54,27 @@ size_t read_file(const char *path, void **data) {
     fclose(f);
     return size;
 }
+
+size_t read_stdin(uint8_t **out) {
+    size_t capacity = 4096;
+    size_t size = 0;
+    uint8_t *buf = xmalloc(capacity);
+    int n;
+    while ((n = fread(buf + size, 1, capacity - size, stdin)) > 0) {
+        size += n;
+        if (size == capacity) {
+            capacity *= 2;
+            buf = realloc(buf, capacity);
+        }
+    }
+    if (ferror(stdin)) {
+        perror("fread");
+        free(buf);
+        return 0;
+    }
+    *out = buf;
+    return size;
+}
 /*
 void url_encode(const uint8_t *data, size_t len, char *out) {
     for (size_t i = 0; i < len; i++) {

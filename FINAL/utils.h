@@ -31,6 +31,8 @@ void setup_signals(void);
 
 // Чтение всего файла в память
 size_t read_file(const char *path, void **data);
+// Чтение из конвеера
+size_t read_stdin(uint8_t **out);
 
 /*
 void url_encode(const uint8_t *data, size_t len, char *out);
