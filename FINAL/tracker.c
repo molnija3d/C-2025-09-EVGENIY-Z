@@ -37,15 +37,13 @@ char *url_encode(const uint8_t *hash) {
 
 // Генерация случайного peer_id (20 байт в виде строки)
 void generate_peer_id(uint8_t *peer_id) {
-    // Пример: -TU0001-123456789012
-    // Первые 8 символов фиксированы, остальные случайные цифры
-    const char *prefix = "-qB4390-";
-    //const char *prefix = "-TU0001-";
-    memcpy(peer_id, prefix, 8);
+    srand(time(NULL));
+    memcpy(peer_id, PEER_PREFIX , sizeof(PEER_PREFIX));
     for (int i = 8; i < 20; i++) {
         peer_id[i] = '0' + (rand() % 10);
     }
     peer_id[20] = '\0';
+    LOG_DEBUG("Client_peer_id: %s", peer_id);
 }
 
 int tracker_get_peers(const torrent_t *tor, const uint8_t *peer_id, peer_t **peers_out) {
@@ -65,7 +63,7 @@ int tracker_get_peers(const torrent_t *tor, const uint8_t *peer_id, peer_t **pee
     // Формируем URL
     char *info_hash_enc = url_encode(tor->info_hash);
     if (!info_hash_enc) {
-    free(info_hash_enc);
+        free(info_hash_enc);
         curl_easy_cleanup(curl);
         return -1;
     }
@@ -73,7 +71,7 @@ int tracker_get_peers(const torrent_t *tor, const uint8_t *peer_id, peer_t **pee
     // Формируем peer_id
     char *peer_id_enc = url_encode(peer_id);
     if (!peer_id_enc) {
-    free(peer_id_enc);
+        free(peer_id_enc);
         curl_easy_cleanup(curl);
         return -1;
     }

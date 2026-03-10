@@ -64,7 +64,9 @@ static void write_padding(tar_writer_t *tw) {
         tw->total_written += pad;
     }
 }
-
+/**
+ * Создает и заполняет структуру для формирования отслеживания файлов tar- архива
+ */
 tar_writer_t *tar_writer_open(FILE *out, const torrent_t *tor) {
     tar_writer_t *tw = xmalloc(sizeof(tar_writer_t));
     memset(tw, 0, sizeof(*tw));
@@ -73,13 +75,21 @@ tar_writer_t *tar_writer_open(FILE *out, const torrent_t *tor) {
     tw->current_file_index = -1;
     return tw;
 }
-
+/**
+ * Записывает блок данных в поток
+ * @tw - указатель на структуру tar_writer (отслеживает сколько осталось записать, интекс текущего файла и тд.)
+ * @piece_index - номер блока
+ * @*data - указатель на данные блока
+ * @len - длина блока
+ */
 void tar_writer_write(tar_writer_t *tw, uint32_t piece_index, const uint8_t *data, uint32_t len) {
     uint64_t piece_start = (uint64_t)piece_index * tw->tor->piece_length;
     uint64_t piece_end = piece_start + len;
 
     uint64_t file_global_offset = 0;
+    //Проходим по всему спику файлов
     for (size_t i = 0; i < tw->tor->file_count; i++) {
+        //сохраняем указатель на текущее описание файла (путь, размер и т.д.)
         const file_t *f = &tw->tor->files[i];
         uint64_t file_start = file_global_offset;
         uint64_t file_end = file_start + f->length;

@@ -52,67 +52,113 @@ void free_config(config_t *cfg) {
     free(cfg->extract_dir);
 }
 
-int main(int argc, char **argv) {
-    config_t cfg;
-    parse_args(argc, argv, &cfg);
-    setup_signals();
-
-    torrent_t tor;
-
-    if (cfg.use_stdin) {
+int load_torrent(torrent_t *tor, config_t *cfg) {
+    if (cfg->use_stdin) {
+        LOG_INFO("Loading torrent from stdin");
         uint8_t *data;
         size_t size = read_stdin(&data);
         if (size == 0) {
             LOG_ERROR("Failed to read torrent from stdin");
-            free_config(&cfg);
-            return 1;
+            goto load_error;
         }
-        if (torrent_load_from_memory(data, size, &tor) != 0) {
+        if (torrent_load_from_memory(data, size, tor) != 0) {
             LOG_ERROR("Failed to parse torrent from stdin");
             free(data);
-            free_config(&cfg);
-            return 1;
+            goto load_error;
         }
         free(data);
-    } else if (cfg.input_file) {
-        LOG_INFO("Loading torrent from %s", cfg.input_file);
-        if (torrent_load(cfg.input_file, &tor) != 0) {
+    } else if (cfg->input_file) {
+        LOG_INFO("Loading torrent from %s", cfg->input_file);
+        if (torrent_load(cfg->input_file, tor) != 0) {
             LOG_ERROR("Failed to load torrent");
-            free_config(&cfg);
-            return 1;
+            goto load_error;
         }
-    } else if (cfg.watch_dir) {
-        LOG_INFO("Watching directory %s (not implemented)", cfg.watch_dir);
-        free_config(&cfg);
-        return 1;
+    } else if (cfg->watch_dir) {
+        LOG_INFO("Watching directory %s (not implemented)", cfg->watch_dir);
+        goto load_error;
     } else {
         LOG_ERROR("No input source specified");
-        free_config(&cfg);
+        goto load_error;
+    }
+    return 0;
+load_error:
+    free_config(cfg);
+    return 1;
+}
+
+void log_info_about_torrent(torrent_t *tor) {
+
+// Выводим информацию
+    LOG_INFO("Announce: %s", tor->announce ? tor->announce : "(none)");
+    LOG_INFO("Name: %s", tor->name);
+    LOG_INFO("Total length: %llu bytes", (unsigned long long)tor->total_length);
+    LOG_INFO("Piece length: %u", tor->piece_length);
+    LOG_INFO("Number of pieces: %u", tor->num_pieces);
+    LOG_INFO("Number of files: %zu", tor->file_count);
+#ifdef DEBUG
+    for (size_t i = 0; i < tor->file_count; i++) {
+        // Собираем путь
+        fprintf(stderr,"[DEBUG]  File %zu: ", i);
+        for (size_t j = 0; j < tor->files[i].path_len; j++) {
+            fprintf(stderr,"%s/", tor->files[i].path[j]);
+        }
+        fprintf(stderr," (%llu bytes)\n", (unsigned long long)tor->files[i].length);
+    }
+#endif
+}
+
+/**
+ * Инициализирует контекст вывода в зависимости от настроек.
+ * @param cfg       Конфигурация (входной параметр, только для чтения)
+ * @param tor       Торрент (входной параметр, только для чтения)
+ * @param out_ctx   Указатель для сохранения созданного контекста (storage_t* или tar_writer_t*)
+ * @param use_tar   Указатель для флага: 1 - tar_writer, 0 - storage
+ * @return 0 при успехе, -1 при ошибке (ресурсы не освобождаются, вызывающий должен сделать cleanup)
+ */
+static int setup_output_context(const config_t *cfg, const torrent_t *tor,
+                                void **out_ctx, int *use_tar) {
+    if (cfg->output_file || cfg->extract_dir) {
+        // Режим сохранения в файл/директорию
+        if (cfg->output_file && tor->file_count > 1) {
+            LOG_ERROR("Cannot use -o with multi-file torrent. Use -O for directory.");
+            return -1;
+        }
+        storage_t *st = storage_open(cfg, tor);
+        if (!st) {
+            LOG_ERROR("Failed to open storage");
+            return -1;
+        }
+        *out_ctx = st;
+        *use_tar = 0;
+    } else {
+        // Режим tar-архива в stdout
+        tar_writer_t *tw = tar_writer_open(stdout, tor);
+        if (!tw) {
+            LOG_ERROR("Failed to open tar writer");
+            return -1;
+        }
+        *out_ctx = tw;
+        *use_tar = 1;
+    }
+    return 0;
+}
+
+int main(int argc, char **argv) {
+    config_t cfg;
+    parse_args(argc, argv, &cfg);
+    setup_signals();
+    torrent_t tor;
+
+    if(load_torrent(&tor, &cfg)) {
         return 1;
     }
 
-// Выводим информацию
-    LOG_INFO("Announce: %s", tor.announce ? tor.announce : "(none)");
-    LOG_INFO("Name: %s", tor.name);
-    LOG_INFO("Total length: %llu bytes", (unsigned long long)tor.total_length);
-    LOG_INFO("Piece length: %u", tor.piece_length);
-    LOG_INFO("Number of pieces: %u", tor.num_pieces);
-    LOG_INFO("Number of files: %zu", tor.file_count);
-#ifdef DEBUG
-    for (size_t i = 0; i < tor.file_count; i++) {
-        // Собираем путь
-        fprintf(stderr,"[DEBUG]  File %zu: ", i);
-        for (size_t j = 0; j < tor.files[i].path_len; j++) {
-            fprintf(stderr,"%s/", tor.files[i].path[j]);
-        }
-        fprintf(stderr," (%llu bytes)\n", (unsigned long long)tor.files[i].length);
-    }
-#endif
-    
+    log_info_about_torrent(&tor);
+
     uint8_t my_peer_id[20];
     generate_peer_id(my_peer_id);
-
     peer_t *peers = NULL;
+
     int peer_count = tracker_get_peers(&tor, my_peer_id, &peers);
     if (peer_count <= 0) {
         LOG_ERROR("No peers received from tracker");
@@ -123,41 +169,15 @@ int main(int argc, char **argv) {
     // Тип вывода хранилище/архив
     void *out_ctx = NULL;
     int use_tar = 0;  // 1 - tar_writer, 0 - storage
-    if (cfg.output_file || cfg.extract_dir) {
-        // Режим сохранения в файл/директорию
-        if (cfg.output_file && tor.file_count > 1) {
-            LOG_ERROR("Cannot use -o with multi-file torrent. Use -O for directory.");
-            free(peers);
-            torrent_free(&tor);
-            free_config(&cfg);
-            return 1;
-        }
-        // Открываем хранилишще
-
-        storage_t *st = storage_open(&cfg, &tor);
-        if (!st) {
-            LOG_ERROR("Failed to open storage");
-            free(peers);
-            torrent_free(&tor);
-            free_config(&cfg);
-            return 1;
-        }
-        out_ctx = st;
-    } else {
-        // Режим tar-архива в stdout
-        tar_writer_t *tw = tar_writer_open(stdout, &tor);
-        if (!tw) {
-            LOG_ERROR("Failed to open tar writer");
-            free(peers);
-            torrent_free(&tor);
-            free_config(&cfg);
-            return 1;
-        }
-        out_ctx = tw;
-        use_tar = 1;
+    
+    if (setup_output_context(&cfg, &tor, &out_ctx, &use_tar) != 0) {
+        free(peers);
+        torrent_free(&tor);
+        free_config(&cfg);
+        return 1;
     }
 
-    // Массив для отметки скачанных кусков
+ // Массив для отметки скачанных кусков
     uint8_t *pieces_done = xcalloc((tor.num_pieces + 7) / 8, 1);
     int pieces_left = tor.num_pieces;
 

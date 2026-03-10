@@ -11,7 +11,7 @@
 #include "peer.h"
 #include "bencode.h"
 #include "utils.h"
-
+#define PEER_PREFIX "-TR2940-"
 // Получить список пиров от трекера
 // Возвращает количество пиров (или -1 при ошибке)
 //int tracker_get_peers(const torrent_t *tor, peer_t **peers_out);
