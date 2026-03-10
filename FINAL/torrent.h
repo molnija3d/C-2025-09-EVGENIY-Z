@@ -2,7 +2,6 @@
 #define TORRENT_H
 
 #define _POSIX_C_SOURCE 200809L
-#define DEBUG
 #include "bencode.h"
 #include "utils.h"
 #include <string.h>

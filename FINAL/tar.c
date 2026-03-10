@@ -1,6 +1,5 @@
 #include "tar.h"
 
-#include "tar.h"
 #include "utils.h"
 #include <string.h>
 #include <stdlib.h>
@@ -9,14 +8,45 @@
 #define TAR_BLOCK_SIZE 512
 
 
+/**
+ * Осуществляет выравнивание.
+ * @param tw    Контекст
+ */
+static void write_padding(tar_writer_t *tw);
+
+/**
+ * Формирует загаловок файла в архиве
+ * @param tw    Контекст tar-писателя
+ * @param path  путь файла
+ * @param size  размер
+*/
+static void write_header(tar_writer_t *tw, const char *path, uint64_t size);
+
+/**
+ * Проверяет контрольную сумму заголовка 
+ * @param *hder    Контекст tar-писателя
+*/
+static unsigned int calculate_checksum(const tar_header_t *hdr);
+
+/**
+ * Преобразует в строку число в 8-ричной системе
+ * @param val   значение
+ * @param *buf  выходной буфер
+ * @param size  размер
+*/
+static void oct_to_str(uint64_t val, char *buf, int size);
+
 /* Преобразование числа в восьмеричную строку с завершающим нулём и пробелом */
+
 static void oct_to_str(uint64_t val, char *buf, int size) {
     char fmt[16];
     snprintf(fmt, sizeof(fmt), "%%0%do ", size - 2); // например, "%011o " для size=12
     snprintf(buf, size, fmt, (unsigned int)val);
 }
 
+
 /* Вычисление контрольной суммы заголовка */
+
 static unsigned int calculate_checksum(const tar_header_t *hdr) {
     const unsigned char *p = (const unsigned char *)hdr;
     unsigned int sum = 0;
@@ -27,7 +57,9 @@ static unsigned int calculate_checksum(const tar_header_t *hdr) {
 }
 
 
+
 /* Запись заголовка для файла с именем path и размером size */
+
 static void write_header(tar_writer_t *tw, const char *path, uint64_t size) {
     tar_header_t hdr;
     memset(&hdr, 0, sizeof(hdr));
@@ -54,7 +86,9 @@ static void write_header(tar_writer_t *tw, const char *path, uint64_t size) {
     fwrite(&hdr, TAR_BLOCK_SIZE, 1, tw->out);
     tw->total_written += TAR_BLOCK_SIZE;
 }
+
 /* Добавляет паддинг до следующей границы 512 байт, если необходимо */
+
 static void write_padding(tar_writer_t *tw) {
     uint64_t mod = tw->total_written % TAR_BLOCK_SIZE;
     if (mod != 0) {
@@ -64,6 +98,8 @@ static void write_padding(tar_writer_t *tw) {
         tw->total_written += pad;
     }
 }
+
+
 /**
  * Создает и заполняет структуру для формирования отслеживания файлов tar- архива
  */

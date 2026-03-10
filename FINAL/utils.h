@@ -21,6 +21,9 @@
 #define LOG_DEBUG(fmt, ...) ((void)0)
 #endif
 
+#define IS_DONE(pieces, idx) ((pieces)[(idx)/8] & (1 << (7 - ((idx)%8))))
+#define MARK_DONE(pieces, idx) ((pieces)[(idx)/8]  |= (1<< (7 - ((idx)%8))))
+
 void *xmalloc(size_t size);
 void *xcalloc(size_t nmemb, size_t size);
 void xfree(void *ptr);

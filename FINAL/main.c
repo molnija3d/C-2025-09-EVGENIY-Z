@@ -1,9 +1,9 @@
 #define _POSIX_C_SOURCE 200809L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <bits/getopt_core.h>
 #include "config.h"
 #include "utils.h"
 #include "torrent.h"
@@ -12,44 +12,83 @@
 #include "storage.h"
 #include "network.h"
 #include "tar.h"
-#define IS_DONE(pieces, idx) ((pieces)[(idx)/8] & (1 << (7 - ((idx)%8))))
-#define MARK_DONE(pieces, idx) ((pieces)[(idx)/8]  |= (1<< (7 - ((idx)%8))))
 
-void parse_args(int argc, char **argv, config_t *cfg) {
-    memset(cfg, 0, sizeof(config_t));
-    cfg->use_stdin = 1;
-    cfg->use_stdout = 1;
-    int opt;
-    while ((opt = getopt(argc, argv, "f:d:o:O:")) != -1) {
-        switch (opt) {
-        case 'f':
-            cfg->input_file = strdup(optarg);
-            cfg->use_stdin = 0;
-            break;
-        case 'd':
-            cfg->watch_dir = strdup(optarg);
-            cfg->use_stdin = 0;
-            break;
-        case 'o':
-            cfg->output_file = strdup(optarg);
-            cfg->use_stdout = 0;
-            break;
-        case 'O':
-            cfg->extract_dir = strdup(optarg);
-            cfg->use_stdout = 0;
-            break;
-        default:
-            LOG_ERROR("Usage: %s [-f file.torrent | -d dir] [-o file | -O dir]\n", argv[0]);
-            exit(1);
-        }
+/**
+ * Зааполняет данные из торрента в структуру tor
+ * @cfg - конфигурация (пути, контекст вывода и т.д.)
+ * @tor - данные о торренте
+ *
+ */
+int load_torrent(torrent_t *tor, config_t *cfg);
+
+/**
+ * Выводит загруженные данные
+ * @tor - Торрент
+ */
+void log_info_about_torrent(torrent_t *tor);
+
+/**
+ * Инициализирует контекст вывода в зависимости от настроек.
+ * @param cfg       Конфигурация
+ * @param tor       Торрент (входной параметр, только для чтения)
+ * @return 0 при успехе, -1 при ошибке (ресурсы не освобождаются, вызывающий должен сделать cleanup)
+ */
+static int setup_output_context(config_t *cfg, const torrent_t *tor); 
+
+/**
+ * Загружает все недостающие куски торрента, перебирая пиров по очереди.
+ *
+ * @param tor         Указатель на структуру торрента.
+ * @param peers       Массив доступных пиров.
+ * @param peer_count  Количество пиров в массиве.
+ * @param my_peer_id  Наш идентификатор (20 байт).
+ * @param cfg         Указатель на конфигурацию (содержит информацию о выводе).
+ *
+ * @return Количество оставшихся (нескачанных) кусков. 0, если все скачаны успешно.
+ */
+int download_pieces(const torrent_t *tor, const peer_t *peers, int peer_count, const uint8_t my_peer_id[20],const config_t *cfg);
+
+int main(int argc, char **argv) {
+    config_t cfg;
+    parse_args(argc, argv, &cfg);
+    setup_signals();
+    torrent_t tor;
+
+    if(load_torrent(&tor, &cfg)) {
+        return 1;
     }
-}
 
-void free_config(config_t *cfg) {
-    free(cfg->input_file);
-    free(cfg->watch_dir);
-    free(cfg->output_file);
-    free(cfg->extract_dir);
+    log_info_about_torrent(&tor);
+
+    uint8_t my_peer_id[20];
+    generate_peer_id(my_peer_id);
+    peer_t *peers = NULL;
+
+    int peer_count = tracker_get_peers(&tor, my_peer_id, &peers);
+    if (peer_count <= 0) {
+        LOG_ERROR("No peers received from tracker");
+        torrent_free(&tor);
+        free_config(&cfg);
+        return 1;
+    }
+    // Переключаем вывод: хранилище/архив
+    if (setup_output_context(&cfg, &tor) != 0) {
+        free(peers);
+        torrent_free(&tor);
+        free_config(&cfg);
+        return 1;
+    }
+    int pieces_left = download_pieces(&tor, peers, peer_count, my_peer_id, &cfg);
+    if (pieces_left == 0) {
+        LOG_INFO("All pieces downloaded successfully!");
+    } else {
+        LOG_ERROR("Download incomplete, %d pieces missing", pieces_left);
+    }
+
+    free(peers);
+    torrent_free(&tor);
+    free_config(&cfg);
+    return 0;
 }
 
 int load_torrent(torrent_t *tor, config_t *cfg) {
@@ -109,14 +148,11 @@ void log_info_about_torrent(torrent_t *tor) {
 
 /**
  * Инициализирует контекст вывода в зависимости от настроек.
- * @param cfg       Конфигурация (входной параметр, только для чтения)
+ * @param cfg       Конфигурация
  * @param tor       Торрент (входной параметр, только для чтения)
- * @param out_ctx   Указатель для сохранения созданного контекста (storage_t* или tar_writer_t*)
- * @param use_tar   Указатель для флага: 1 - tar_writer, 0 - storage
  * @return 0 при успехе, -1 при ошибке (ресурсы не освобождаются, вызывающий должен сделать cleanup)
  */
-static int setup_output_context(const config_t *cfg, const torrent_t *tor,
-                                void **out_ctx, int *use_tar) {
+static int setup_output_context(config_t *cfg, const torrent_t *tor) {
     if (cfg->output_file || cfg->extract_dir) {
         // Режим сохранения в файл/директорию
         if (cfg->output_file && tor->file_count > 1) {
@@ -128,8 +164,8 @@ static int setup_output_context(const config_t *cfg, const torrent_t *tor,
             LOG_ERROR("Failed to open storage");
             return -1;
         }
-        *out_ctx = st;
-        *use_tar = 0;
+        cfg->out_ctx = st;
+        cfg->use_tar = 0;
     } else {
         // Режим tar-архива в stdout
         tar_writer_t *tw = tar_writer_open(stdout, tor);
@@ -137,59 +173,39 @@ static int setup_output_context(const config_t *cfg, const torrent_t *tor,
             LOG_ERROR("Failed to open tar writer");
             return -1;
         }
-        *out_ctx = tw;
-        *use_tar = 1;
+        cfg->out_ctx = tw;
+        cfg->use_tar = 1;
     }
     return 0;
 }
 
-int main(int argc, char **argv) {
-    config_t cfg;
-    parse_args(argc, argv, &cfg);
-    setup_signals();
-    torrent_t tor;
+/**
+ * Загружает все недостающие куски торрента, перебирая пиров по очереди.
+ *
+ * @param tor         Указатель на структуру торрента.
+ * @param peers       Массив доступных пиров.
+ * @param peer_count  Количество пиров в массиве.
+ * @param my_peer_id  Наш идентификатор (20 байт).
+ * @param cfg         Указатель на конфигурацию (содержит информацию о выводе).
+ *
+ * @return Количество оставшихся (нескачанных) кусков. 0, если все скачаны успешно.
+ */
+int download_pieces(const torrent_t *tor, const peer_t *peers, int peer_count,
+                    const uint8_t my_peer_id[20],const config_t *cfg)
 
-    if(load_torrent(&tor, &cfg)) {
-        return 1;
-    }
-
-    log_info_about_torrent(&tor);
-
-    uint8_t my_peer_id[20];
-    generate_peer_id(my_peer_id);
-    peer_t *peers = NULL;
-
-    int peer_count = tracker_get_peers(&tor, my_peer_id, &peers);
-    if (peer_count <= 0) {
-        LOG_ERROR("No peers received from tracker");
-        torrent_free(&tor);
-        free_config(&cfg);
-        return 1;
-    }
-    // Тип вывода хранилище/архив
-    void *out_ctx = NULL;
-    int use_tar = 0;  // 1 - tar_writer, 0 - storage
-    
-    if (setup_output_context(&cfg, &tor, &out_ctx, &use_tar) != 0) {
-        free(peers);
-        torrent_free(&tor);
-        free_config(&cfg);
-        return 1;
-    }
-
- // Массив для отметки скачанных кусков
-    uint8_t *pieces_done = xcalloc((tor.num_pieces + 7) / 8, 1);
-    int pieces_left = tor.num_pieces;
-
+{
+    // Массив для отметки скачанных кусков
+    uint8_t *pieces_done = xcalloc((tor->num_pieces + 7) / 8, 1);
+    int pieces_left = tor->num_pieces;
 
     for (int peer_idx = 0; peer_idx < peer_count && pieces_left > 0 && running; peer_idx++) {
         peer_t p = peers[peer_idx];
         char ip_str[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &p.ip, ip_str, sizeof(ip_str));
         uint16_t port = ntohs(p.port);
-        LOG_INFO("Trying peer %s:%u (%d/%d)", ip_str, port, peer_idx+1, peer_count);
+        LOG_INFO("Trying peer %s:%u (%d/%d)", ip_str, port, peer_idx + 1, peer_count);
 
-        int sock = tcp_connect_timeout(p.ip, p.port, 10000);
+        int sock = tcp_connect_timeout(p.ip, p.port, CONNECTIOIN_TIMEOUT);
         if (sock < 0) {
             LOG_WARN("Failed to connect to peer");
             continue;
@@ -203,7 +219,7 @@ int main(int argc, char **argv) {
         };
 
         uint8_t peer_id_resp[20];
-        if (peer_handshake(sock, &tor, my_peer_id, peer_id_resp) < 0) {
+        if (peer_handshake(sock, tor, my_peer_id, peer_id_resp) < 0) {
             LOG_WARN("Handshake failed");
             close(sock);
             continue;
@@ -216,15 +232,14 @@ int main(int argc, char **argv) {
             continue;
         }
 
-        if (peer_wait_for_unchoke(&peer, 30000) < 0) {
+        if (peer_wait_for_unchoke(&peer, UNCHOKE_TIMEOUT) < 0) {
             LOG_WARN("Failed to get unchoke");
             peer_close(&peer);
             continue;
         }
 
-        // Получили unchoke, считаем, что есть bitfield, можно начинать загрузку недостающих кусков
-        // начинаем скачивать недостающие куски
-        for (uint32_t i = 0; i < tor.num_pieces && pieces_left > 0 && running; i++) {
+        // Получили unchoke, начинаем скачивать недостающие куски
+        for (uint32_t i = 0; i < tor->num_pieces && pieces_left > 0 && running; i++) {
             if (IS_DONE(pieces_done, i)) continue; // уже скачан
 
             if (!peer_has_piece(&peer, i)) {
@@ -232,7 +247,7 @@ int main(int argc, char **argv) {
                 continue;
             }
 
-            uint32_t piece_len = piece_size(&tor, i);
+            uint32_t piece_len = piece_size(tor, i);
             uint8_t *buf = xmalloc(piece_len);
             int piece_ok = 1;
 
@@ -244,7 +259,7 @@ int main(int argc, char **argv) {
                     piece_ok = 0;
                     break;
                 }
-                if (peer_receive_block(sock, i, offset, buf + offset, block_len, 30000) < 0) {
+                if (peer_receive_block(sock, i, offset, buf + offset, block_len, RECEIVE_TIMEOUT) < 0) {
                     LOG_ERROR("Failed to receive block %u for piece %u", offset, i);
                     piece_ok = 0;
                     break;
@@ -252,12 +267,12 @@ int main(int argc, char **argv) {
                 offset += block_len;
             }
 
-            if (piece_ok && verify_piece(&tor, i, buf)) {
+            if (piece_ok && verify_piece(tor, i, buf)) {
                 // Записываем кусок в нужный обработчик
-                if (use_tar) {
-                    tar_writer_write((tar_writer_t*)out_ctx, i, buf, piece_len);
+                if (cfg->use_tar) {
+                    tar_writer_write((tar_writer_t*)cfg->out_ctx, i, buf, piece_len);
                 } else {
-                    storage_write((storage_t*)out_ctx, i, buf, piece_len);
+                    storage_write((storage_t*)cfg->out_ctx, i, buf, piece_len);
                 }
                 MARK_DONE(pieces_done, i);
                 pieces_left--;
@@ -272,21 +287,15 @@ int main(int argc, char **argv) {
         peer_close(&peer);
     }
 
-    if (use_tar) {
-        tar_writer_close((tar_writer_t*)out_ctx);
+    // Закрываем контекст вывода
+    if (cfg->use_tar) {
+        tar_writer_close((tar_writer_t*)cfg->out_ctx);
     } else {
-        storage_close((storage_t*)out_ctx);
+        storage_close((storage_t*)cfg->out_ctx);
     }
 
-    if (pieces_left == 0) {
-        LOG_INFO("All pieces downloaded successfully!");
-    } else {
-        LOG_ERROR("Download incomplete, %d pieces missing", pieces_left);
-    }
 
     free(pieces_done);
-    free(peers);
-    torrent_free(&tor);
-    free_config(&cfg);
-    return 0;
+    return pieces_left;
 }
+

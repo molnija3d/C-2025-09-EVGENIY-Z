@@ -65,32 +65,4 @@ void tar_writer_write(tar_writer_t *tw, uint32_t piece_index, const uint8_t *dat
  * @param tw    Контекст
  */
 void tar_writer_close(tar_writer_t *tw);
-
-/**
- * Осуществляет выравнивание.
- * @param tw    Контекст
- */
-static void write_padding(tar_writer_t *tw);
-
-/**
- * Формирует загаловок файла в архиве
- * @param tw    Контекст tar-писателя
- * @param path  путь файла
- * @param size  размер
-*/
-static void write_header(tar_writer_t *tw, const char *path, uint64_t size);
-
-/**
- * Проверяет контрольную сумму заголовка 
- * @param *hder    Контекст tar-писателя
-*/
-static unsigned int calculate_checksum(const tar_header_t *hdr);
-
-/**
- * Преобразует в строку число в 8-ричной системе
- * @param val   значение
- * @param *buf  выходной буфер
- * @param size  размер
-*/
-static void oct_to_str(uint64_t val, char *buf, int size);
 #endif
