@@ -11,6 +11,7 @@
 #include "tracker.h"
 #include "storage.h"
 #include "network.h"
+#include "tar.h"
 #define IS_DONE(pieces, idx) ((pieces)[(idx)/8] & (1 << (7 - ((idx)%8))))
 #define MARK_DONE(pieces, idx) ((pieces)[(idx)/8]  |= (1<< (7 - ((idx)%8))))
 
@@ -38,7 +39,7 @@ void parse_args(int argc, char **argv, config_t *cfg) {
             cfg->use_stdout = 0;
             break;
         default:
-            fprintf(stderr, "Usage: %s [-f file.torrent | -d dir] [-o file | -O dir]\n", argv[0]);
+            LOG_ERROR("Usage: %s [-f file.torrent | -d dir] [-o file | -O dir]\n", argv[0]);
             exit(1);
         }
     }
@@ -97,14 +98,17 @@ int main(int argc, char **argv) {
     LOG_INFO("Piece length: %u", tor.piece_length);
     LOG_INFO("Number of pieces: %u", tor.num_pieces);
     LOG_INFO("Number of files: %zu", tor.file_count);
+#ifdef DEBUG
     for (size_t i = 0; i < tor.file_count; i++) {
         // Собираем путь
-        printf("  File %zu: ", i);
+        fprintf(stderr,"[DEBUG]  File %zu: ", i);
         for (size_t j = 0; j < tor.files[i].path_len; j++) {
-            printf("%s/", tor.files[i].path[j]);
+            fprintf(stderr,"%s/", tor.files[i].path[j]);
         }
-        printf(" (%llu bytes)\n", (unsigned long long)tor.files[i].length);
+        fprintf(stderr," (%llu bytes)\n", (unsigned long long)tor.files[i].length);
     }
+#endif
+    
     uint8_t my_peer_id[20];
     generate_peer_id(my_peer_id);
 
@@ -116,9 +120,44 @@ int main(int argc, char **argv) {
         free_config(&cfg);
         return 1;
     }
+    // Тип вывода хранилище/архив
+    void *out_ctx = NULL;
+    int use_tar = 0;  // 1 - tar_writer, 0 - storage
+    if (cfg.output_file || cfg.extract_dir) {
+        // Режим сохранения в файл/директорию
+        if (cfg.output_file && tor.file_count > 1) {
+            LOG_ERROR("Cannot use -o with multi-file torrent. Use -O for directory.");
+            free(peers);
+            torrent_free(&tor);
+            free_config(&cfg);
+            return 1;
+        }
+        // Открываем хранилишще
 
+        storage_t *st = storage_open(&cfg, &tor);
+        if (!st) {
+            LOG_ERROR("Failed to open storage");
+            free(peers);
+            torrent_free(&tor);
+            free_config(&cfg);
+            return 1;
+        }
+        out_ctx = st;
+    } else {
+        // Режим tar-архива в stdout
+        tar_writer_t *tw = tar_writer_open(stdout, &tor);
+        if (!tw) {
+            LOG_ERROR("Failed to open tar writer");
+            free(peers);
+            torrent_free(&tor);
+            free_config(&cfg);
+            return 1;
+        }
+        out_ctx = tw;
+        use_tar = 1;
+    }
 
-// Массив для отметки скачанных кусков
+    // Массив для отметки скачанных кусков
     uint8_t *pieces_done = xcalloc((tor.num_pieces + 7) / 8, 1);
     int pieces_left = tor.num_pieces;
 
@@ -164,17 +203,9 @@ int main(int argc, char **argv) {
         }
 
         // Получили unchoke, считаем, что есть bitfield, можно начинать загрузку недостающих кусков
-        // Открываем хранилишще
-        storage_t *st = storage_open(&cfg, &tor);
-        if (!st) {
-            LOG_ERROR("Failed to open storage");
-            peer_close(&peer);
-            continue;
-        }
-
-        // Сканируем все куски, которые ещё не скачаны
+        // начинаем скачивать недостающие куски
         for (uint32_t i = 0; i < tor.num_pieces && pieces_left > 0 && running; i++) {
-            if (IS_DONE(pieces_done, i)) continue; // уже есть
+            if (IS_DONE(pieces_done, i)) continue; // уже скачан
 
             if (!peer_has_piece(&peer, i)) {
                 LOG_DEBUG("Peer lacks piece %u", i);
@@ -202,21 +233,30 @@ int main(int argc, char **argv) {
             }
 
             if (piece_ok && verify_piece(&tor, i, buf)) {
-                storage_write(st, i, buf, piece_len);
-                // Помечаем кусок как скачанный
-                // pieces_done[i/8] |= (1 << (7 - (i%8)));
+                // Записываем кусок в нужный обработчик
+                if (use_tar) {
+                    tar_writer_write((tar_writer_t*)out_ctx, i, buf, piece_len);
+                } else {
+                    storage_write((storage_t*)out_ctx, i, buf, piece_len);
+                }
                 MARK_DONE(pieces_done, i);
                 pieces_left--;
                 LOG_INFO("Piece %u done, %d left", i, pieces_left);
             } else {
                 LOG_ERROR("Failed to download piece %u", i);
-                // не помечаем, возможно другой пир скачает
+                // Не помечаем, попробуем у другого пира
             }
             free(buf);
         }
 
-        storage_close(st);
         peer_close(&peer);
+    }
+
+    // --- Завершение ---
+    if (use_tar) {
+        tar_writer_close((tar_writer_t*)out_ctx);
+    } else {
+        storage_close((storage_t*)out_ctx);
     }
 
     if (pieces_left == 0) {
@@ -227,8 +267,6 @@ int main(int argc, char **argv) {
 
     free(pieces_done);
     free(peers);
-
-    // Освобождение
     torrent_free(&tor);
     free_config(&cfg);
     return 0;

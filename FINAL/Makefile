@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wpedantic -std=c11 -Wall -Wextra -g -I. 
 LDFLAGS = -lssl -lcrypto -lcurl 
 
-SRCS = main.c utils.c bencode.c torrent.c tracker.c network.c peer.c storage.c
+SRCS = main.c utils.c bencode.c torrent.c tracker.c network.c peer.c storage.c tar.c
 OBJS = $(SRCS:.c=.o)
 TARGET = torrent_client
 TARGET_SANITIZE = torrent_client_sanitize
