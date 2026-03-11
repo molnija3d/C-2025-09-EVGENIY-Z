@@ -142,7 +142,7 @@ Bencode (BitTorrent encoding) — простой формат сериализа
 ```mermaid
 graph TD
  
- utils |все модули| --> main
+ utils[все модули] --> main
  config --> main
  main --> tracker
  main --> peer
