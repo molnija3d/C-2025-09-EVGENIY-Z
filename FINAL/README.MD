@@ -144,17 +144,17 @@ graph TD
  config --> main
  utils --> main
  main --> tracker
- tracker --> bencode
  main --> peer
  main --> storage
  main --> tar
+ tracker --> bencode
  peer --> network
- storage --> torrent
+ tar --> main
  tar --> torrent
  torrent --> bencode
  network --> peer
  storage --> main
- tar --> main
+ storage --> torrent
  bencode --> torrent
  bencode --> tracker
 ```
