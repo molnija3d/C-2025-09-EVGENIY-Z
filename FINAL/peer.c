@@ -162,16 +162,7 @@ int peer_wait_for_unchoke(peer_connection_t *peer, int timeout_ms) {
                     }
                 }
             }
-            /*
-                      if (payload_len >= 4) {
-                          uint32_t index;
-                          memcpy(&index, payload, 4);
-                          index = ntohl(index);
-                          // Здесь можно обновить битовое поле (пока пропустим)
-                          LOG_DEBUG("Received have for piece %u", index);
-                      }
-                      */
-            break;
+         break;
         case 5: // bitfield
             // Сохраняем битовое поле (копируем)
             peer->bitfield = xmalloc(payload_len);

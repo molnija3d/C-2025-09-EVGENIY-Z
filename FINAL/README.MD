@@ -149,9 +149,11 @@ graph TD
  main --> storage
  main --> tar
  main --> torrent
+ main --> network
  torrent --> bencode
  network --> peer
  peer --> storage
  peer --> tar
+ peer --> network
  bencode --> torrent
 ```
