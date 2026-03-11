@@ -47,3 +47,42 @@ make clean
 ```bash
 make sanitize
 ```
+
+## Использование
+
+###Формат командной строки
+```bash
+torrent_client [-f file.torrent | -d directory] [-o file | -O directory]
+-f file.torrent — загрузить торрент из указанного файла.
+
+-d directory — следить за директорией и автоматически обрабатывать новые .torrent файлы (в текущей версии не реализовано).
+
+-o file — сохранить загруженные данные в один файл (только для single-file торрентов).
+
+-O directory — извлечь файлы в указанную директорию (для multi-file создаются поддиректории).
+```
+Если ни один из ключей ввода не указан, торрент читается из stdin.
+
+Если ни один из ключей вывода не указан, в stdout выводится tar-архив.
+
+###Примеры
+
+Загрузить торрент из файла и сохранить содержимое в текущую директорию (multi-file):
+```bash
+./torrent_client -f ubuntu.torrent -O ./download
+```
+
+Загрузить торрент из stdin и вывести tar-архив в stdout (можно передать в tar):
+```bash
+curl -s http://example.com/file.torrent | ./torrent_client | tar xvf -
+```
+
+Сохранить single-file торрент в конкретный файл:
+```bash
+./torrent_client -f debian.torrent -o debian.iso
+```
+
+Загрузить торрент из файла, но не указывать вывод — будет создан tar в stdout:
+```bash
+./torrent_client -f archlinux.torrent > arch.tar
+```
