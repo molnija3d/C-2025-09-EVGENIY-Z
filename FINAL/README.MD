@@ -27,11 +27,14 @@
 ```bash
 sudo apt install libcurl4-openssl-dev libssl-dev
 
+
 ### Компиляция
 
 Используется Makefile. Просто выполните в корне проекта:
 ```bash
 make
+```
+
 
 Бинарный файл torrent_client будет создан в текущей директории.
 
@@ -39,7 +42,8 @@ make
 Очистка объектных файлов:
 ```bash
 make clean
-
+```
 Сборка с сантиайзером (для отладки и тестирования)
 ```bash
 make sanitize
+```
