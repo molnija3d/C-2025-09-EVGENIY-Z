@@ -148,12 +148,12 @@ flowchart TD
  main --> storage
  main --> tar
  main --> torrent
- main --> network
  tracker --> main
  torrent --> bencode
  torrent --> main
  network --> peer
  peer --> network
+ peer --> main
  bencode --> torrent
  tar --> pipe
  tar --> hdd
