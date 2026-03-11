@@ -26,7 +26,7 @@
 Установка на Debian/Ubuntu:
 ```bash
 sudo apt install libcurl4-openssl-dev libssl-dev
-
+```
 
 ### Компиляция
 
@@ -86,3 +86,24 @@ curl -s http://example.com/file.torrent | ./torrent_client | tar xvf -
 ```bash
 ./torrent_client -f archlinux.torrent > arch.tar
 ```
+
+##Формат bencode
+Bencode (BitTorrent encoding) — простой формат сериализации данных, используемый в .torrent файлах и при общении с трекером. Поддерживаются четыре типа:
+
+*Строка: <длина>:<данные>
+Пример: 4:spam → "spam"
+
+*Целое число: i<число>e
+Пример: i42e → 42
+
+*Список: l<bencoded значения>e
+Пример: l4:spami42ee → ["spam", 42]
+
+*Словарь: d<ключ1><значение1><ключ2><значение2>e
+Пример: d4:name5:alice3:agei30ee → {"name": "alice", "age": 30}
+
+Ключи словаря — строки. Все данные хранятся в точном бинарном виде, строки не обязательно содержат текст.
+
+В проекте реализованы функции bencode_decode для разбора и bencode_encode для сериализации.
+
+
