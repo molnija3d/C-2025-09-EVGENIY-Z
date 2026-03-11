@@ -158,7 +158,7 @@ flowchart TD
  tar --> pipe
  tar --> hdd
  storage --> hdd 
-subgraph "save torrent" 
+subgraph STORE 
  pipe
  hdd
  end
