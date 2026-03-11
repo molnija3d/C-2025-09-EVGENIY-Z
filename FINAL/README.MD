@@ -156,7 +156,6 @@ flowchart TD
  peer --> main
  bencode --> torrent
  tar --> pipe
- tar --> hdd
  storage --> hdd 
 subgraph STORE 
  pipe
