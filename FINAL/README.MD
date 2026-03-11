@@ -155,9 +155,10 @@ flowchart TD
  network --> peer
  peer --> network
  bencode --> torrent
- tar --> data
- storage --> data 
-subgraph data
+ tar --> pipe
+ tar --> hdd
+ storage --> hdd 
+subgraph "save torrent" 
  pipe
  hdd
  end
