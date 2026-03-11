@@ -56,7 +56,7 @@ size_t read_file(const char *path, void **data) {
 }
 
 size_t read_stdin(uint8_t **out) {
-    size_t capacity = 4096;
+    size_t capacity = TORRENT_BUFFER_CAPACITY;
     size_t size = 0;
     uint8_t *buf = xmalloc(capacity);
     int n;

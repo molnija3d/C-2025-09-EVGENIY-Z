@@ -50,9 +50,10 @@ int download_pieces(const torrent_t *tor, const peer_t *peers, int peer_count, c
 
 int main(int argc, char **argv) {
     config_t cfg;
+    torrent_t tor;
+
     parse_args(argc, argv, &cfg);
     setup_signals();
-    torrent_t tor;
 
     if(load_torrent(&tor, &cfg)) {
         return 1;

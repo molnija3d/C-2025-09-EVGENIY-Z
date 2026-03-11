@@ -22,6 +22,8 @@
 #define LOG_DEBUG(...)   ((void)0)
 #endif
 
+#define TORRENT_BUFFER_CAPACITY 4096
+
 #define IS_DONE(pieces, idx) ((pieces)[(idx)/8] & (1 << (7 - ((idx)%8))))
 #define MARK_DONE(pieces, idx) ((pieces)[(idx)/8]  |= (1<< (7 - ((idx)%8))))
 
