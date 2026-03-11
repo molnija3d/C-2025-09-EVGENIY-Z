@@ -50,7 +50,7 @@ make sanitize
 
 ## Использование
 
-###Формат командной строки
+### Формат командной строки
 ```bash
 torrent_client [-f file.torrent | -d directory] [-o file | -O directory]
 -f file.torrent — загрузить торрент из указанного файла.
@@ -65,7 +65,7 @@ torrent_client [-f file.torrent | -d directory] [-o file | -O directory]
 
 Если ни один из ключей вывода не указан, в stdout выводится tar-архив.
 
-###Примеры
+### Примеры
 
 Загрузить торрент из файла и сохранить содержимое в текущую директорию (multi-file):
 ```bash
@@ -87,7 +87,7 @@ curl -s http://example.com/file.torrent | ./torrent_client | tar xvf -
 ./torrent_client -f archlinux.torrent > arch.tar
 ```
 
-##Формат bencode
+## Формат bencode
 Bencode (BitTorrent encoding) — простой формат сериализации данных, используемый в .torrent файлах и при общении с трекером. Поддерживаются четыре типа:
 
 * Строка: <длина>:<данные>
