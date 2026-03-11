@@ -11,14 +11,15 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <stdint.h>
+#include <stdarg.h>
 
-#define LOG_ERROR(fmt, ...) fprintf(stderr, "[ERROR] %s:%d " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
-#define LOG_WARN(fmt, ...) fprintf(stderr, "[WARNING] %s:%d " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
-#define LOG_INFO(fmt, ...)  fprintf(stderr, "[INFO] " fmt "\n", ##__VA_ARGS__)
+#define LOG_ERROR(...)   log_error(__FILE__, __LINE__, __VA_ARGS__)
+#define LOG_WARN(...)    log_warn(__FILE__, __LINE__, __VA_ARGS__)
+#define LOG_INFO(...)    log_info(__VA_ARGS__)
 #ifdef DEBUG
-#define LOG_DEBUG(fmt, ...) fprintf(stderr, "[DEBUG] " fmt "\n", ##__VA_ARGS__)
+#define LOG_DEBUG(...)   log_debug(__FILE__, __LINE__, __VA_ARGS__)
 #else
-#define LOG_DEBUG(fmt, ...) ((void)0)
+#define LOG_DEBUG(...)   ((void)0)
 #endif
 
 #define IS_DONE(pieces, idx) ((pieces)[(idx)/8] & (1 << (7 - ((idx)%8))))
@@ -38,7 +39,42 @@ size_t read_file(const char *path, void **data);
 size_t read_stdin(uint8_t **out);
 
 /*
-void url_encode(const uint8_t *data, size_t len, char *out);
-*/
+ * Логирование в stderr
+ * */
+static inline void log_error(const char *file, int line, const char *fmt, ...) {
+    fprintf(stderr, "[ERROR] %s:%d ", file, line);
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+    fprintf(stderr, "\n");
+}
+
+static inline void log_warn(const char *file, int line, const char *fmt, ...) {
+    fprintf(stderr, "[WARNING] %s:%d ", file, line);
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+    fprintf(stderr, "\n");
+}
+
+static inline void log_info(const char *fmt, ...) {
+    fprintf(stderr, "[INFO] ");
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+    fprintf(stderr, "\n");
+}
+
+static inline void log_debug(const char *file, int line, const char *fmt, ...) {
+    fprintf(stderr, "[DEBUG] %s:%d ", file, line);
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+    fprintf(stderr, "\n");
+}
 
 #endif
