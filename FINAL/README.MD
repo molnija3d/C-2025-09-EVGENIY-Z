@@ -140,20 +140,19 @@ Bencode (BitTorrent encoding) — простой формат сериализа
 
 #### Взаимодействие модулей
 
-flowchart TD
-
-config-->main
-main-->tracker
-tracker-->bencode
-main-->peer
-main-->storage
-main-->tar
-peer-->network
-storage-->torrent
-tar-->torrent
-torrent-->bencode
-network-->peer
-storage-->main
-tar-->main
-bencode-->torrent
-bencode-->tracker
+graph TD;
+config-->main;
+main-->tracker;
+tracker-->bencode;
+main-->peer;
+main-->storage;
+main-->tar;
+peer-->network;
+storage-->torrent;
+tar-->torrent;
+torrent-->bencode;
+network-->peer;
+storage-->main;
+tar-->main;
+bencode-->torrent;
+bencode-->tracker;
