@@ -154,8 +154,9 @@ graph TD
  torrent --> bencode
  torrent --> main
  network --> peer
- network --> tar
- network --> storage
  peer --> network
  bencode --> torrent
+ subgraph data
+ tar --> pipe, hdd
+ storage --> hdd
 ```
