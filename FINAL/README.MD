@@ -156,7 +156,7 @@ flowchart TD
  peer --> network
  bencode --> torrent
  subgraph data
- tar --> pipe, hdd
+ tar --> pipe
  storage --> hdd
  end
 ```
