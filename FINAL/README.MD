@@ -141,6 +141,7 @@ Bencode (BitTorrent encoding) — простой формат сериализа
 #### Взаимодействие модулей
 
 flowchart TD
+
 config-->main
 main-->tracker
 tracker-->bencode
