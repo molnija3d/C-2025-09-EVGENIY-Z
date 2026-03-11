@@ -143,6 +143,12 @@ Bencode (BitTorrent encoding) — простой формат сериализа
 graph TD
  config --> main
  utils --> main
+ utils --> tracker
+ utils --> peer
+ utils --> storage
+ utils --> tar
+ utils --> network
+ utils --> bencode
  main --> tracker
  main --> peer
  main --> storage
