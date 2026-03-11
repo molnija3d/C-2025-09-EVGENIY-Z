@@ -109,7 +109,7 @@ ben_obj_t *bencode_decode(const uint8_t *data, size_t size) {
 }
 
 static const uint8_t *parse_string(const uint8_t *ptr, const uint8_t *end, ben_obj_t *obj) {
-    uint8_t *colon = memchr(ptr, ':', end - ptr);
+    const uint8_t *colon = memchr(ptr, ':', end - ptr);
     if (!colon) return NULL;
     long len = strtol((char*)ptr, NULL, 10);
     if (len < 0 || colon + 1 + len > end) return NULL;
