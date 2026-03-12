@@ -1,14 +1,9 @@
 #include "tracker.h"
 
-// Структура для накопления данных ответа
-struct memory {
-    char *data;
-    size_t size;
-};
 
 static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
     size_t realsize = size * nmemb;
-    struct memory *mem = (struct memory *)userp;
+    memory_t *mem = (memory_t *)userp;
 
     char *ptr = realloc(mem->data, mem->size + realsize + 1);
     if (!ptr) {
@@ -49,7 +44,7 @@ void generate_peer_id(uint8_t *peer_id) {
 int tracker_get_peers(const torrent_t *tor, const uint8_t *peer_id, peer_t **peers_out) {
     CURL *curl;
     CURLcode res;
-    struct memory chunk = { NULL, 0 };
+    memory_t chunk = { NULL, 0 };
     int peer_count = -1;
     *peers_out = NULL;
 

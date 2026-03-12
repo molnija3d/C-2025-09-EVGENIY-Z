@@ -44,7 +44,6 @@ typedef struct {
 int torrent_load(const char *filename, torrent_t *tor);
 
 // Загрузка торрента из буфера в памяти (данные должны оставаться валидными до вызова torrent_free,
-// так как структура может ссылаться на них? Нет, мы копируем все нужные данные)
 int torrent_load_from_memory(const uint8_t *data, size_t size, torrent_t *tor);
 
 // Освобождение ресурсов, занятых торрентом

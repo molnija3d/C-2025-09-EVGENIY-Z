@@ -9,9 +9,6 @@ int peer_handshake(int sock, const torrent_t *tor, const uint8_t *my_peer_id, ui
     memcpy(hs_out + 1, BT_PROTOCOL, BT_PROTOCOL_LEN);
     // 8 зарезервированных байт оставляем нулями (можно установить биты расширений позже)
     memcpy(hs_out + 28, tor->info_hash, 20);
-    // peer_id: можно использовать случайный, но для теста возьмём фиксированный
-    //  const char *test_peer_id = "-TU0001-123456789012";
-    //   memcpy(hs_out + 48, test_peer_id, 20);
     memcpy(hs_out + 48, my_peer_id, 20);
 
     if (send_full_timeout(sock, hs_out, HANDSHAKE_SIZE, 10000) < 0) {
@@ -220,7 +217,6 @@ int peer_receive_block(int sock, uint32_t expected_index, uint32_t expected_begi
                 return 0;
             } else {
                 // Не тот блок — возможно, пришёл блок от другого запроса (если мы отправляли несколько)
-                // В нашей последовательной модели это не должно происходить, но на всякий случай проигнорируем
                 LOG_DEBUG("Ignored piece %u:%u (expected %u:%u)", index, begin, expected_index, expected_begin);
                 free(payload);
                 // Продолжаем ждать нужный
@@ -234,7 +230,6 @@ int peer_receive_block(int sock, uint32_t expected_index, uint32_t expected_begi
                 free(payload);
                 return -1; // Пир задушил, прерываем
             }
-            // Для простоты игнорируем остальные
             LOG_DEBUG("Ignored message id %d while waiting for block", msg_id);
             free(payload);
         }

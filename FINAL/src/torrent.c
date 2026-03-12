@@ -126,7 +126,7 @@ int torrent_load_from_memory(const uint8_t *data, size_t size, torrent_t *tor) {
         memcpy(tor->pieces, pcs_data, pcs_len);
     }
 
-    // Теперь разбираем файлы: смотрим, есть ли ключ "files" (multi-file) или "length" (single-file)
+    // разбираем файлы: смотрим, есть ли ключ "files" (multi-file) или "length" (single-file)
     ben_obj_t *files_list = bencode_dict_get(info, "files");
     if (files_list && files_list->type == BEN_LIST) {
         // Multi-file режим

@@ -35,7 +35,6 @@ int peer_has_piece(peer_connection_t *peer, uint32_t index);
 
 // Выполнить handshake с пиром
 // Возвращает 0 при успехе, -1 при ошибке
-//int peer_handshake(int sock, const torrent_t *tor, uint8_t *peer_id_out);
 int peer_handshake(int sock, const torrent_t *tor, const uint8_t *my_peer_id, uint8_t *peer_id_out);
 
 // Отправить сообщение interested

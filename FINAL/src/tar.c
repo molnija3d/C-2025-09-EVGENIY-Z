@@ -140,7 +140,6 @@ void tar_writer_write(tar_writer_t *tw, uint32_t piece_index, const uint8_t *dat
 
             // Если перешли к новому файлу
             if ((int)i != tw->current_file_index) {
-                // Предыдущий файл должен быть завершён (мы добавляли паддинг при его завершении)
                 // Записываем заголовок нового файла
                 char full_path[4096] = {0};
                 for (size_t k = 0; k < f->path_len; k++) {
@@ -171,13 +170,13 @@ void tar_writer_write(tar_writer_t *tw, uint32_t piece_index, const uint8_t *dat
 void tar_writer_close(tar_writer_t *tw) {
     if (!tw) return;
 
-    // Если последний файл не был завершён (маловероятно, но на всякий случай)
+    // Если последний файл не был завершён 
     if (tw->current_file_index >= 0) {
         // Проверяем, нужно ли добавить паддинг для последнего файла
         // (если он не был добавлен ранее)
         const file_t *f = &tw->tor->files[tw->current_file_index];
         if (tw->file_bytes_written < f->length) {
-            // Файл не завершён — ошибка, но мы всё равно добавим паддинг от текущей позиции
+            // Файл не завершён, добавим паддинг от текущей позиции
             write_padding(tw);
         }
     }

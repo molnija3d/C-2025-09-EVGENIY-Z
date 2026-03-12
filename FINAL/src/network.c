@@ -23,7 +23,7 @@ int tcp_connect_timeout(uint32_t ip, uint16_t port, int timeout_ms) {
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_port = port; // уже в сетевом порядке
+    addr.sin_port = port; 
     addr.sin_addr.s_addr = ip;
 
     int ret = connect(sock, (struct sockaddr*)&addr, sizeof(addr));
@@ -34,7 +34,7 @@ int tcp_connect_timeout(uint32_t ip, uint16_t port, int timeout_ms) {
     }
 
     if (ret == 0) {
-        // Соединение установилось мгновенно (редко)
+        // Соединение установилось мгновенно
         // Возвращаем сокет в блокирующий режим
         fcntl(sock, F_SETFL, flags);
         return sock;
@@ -139,7 +139,7 @@ int recv_message(int sock, uint8_t **payload, size_t *payload_len, int timeout_m
     }
     uint32_t msg_len = ntohl(len_prefix);
     if (msg_len == 0) {
-        // keep-alive сообщение (не должно встречаться, но обработаем)
+        // keep-alive сообщение 
         *payload = NULL;
         *payload_len = 0;
         return 0;

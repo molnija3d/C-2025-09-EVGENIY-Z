@@ -29,7 +29,7 @@ typedef struct ben_obj {
 } ben_obj_t;
 
 typedef struct ben_pair {
-    char *key;          // ключ как null-терминированная строка (для удобства)
+    char *key;          // ключ как null-терминированная строка
     size_t key_len;
     ben_obj_t *value;
 } ben_pair_t;
@@ -41,7 +41,7 @@ ben_obj_t *bencode_dict_get(const ben_obj_t *dict, const char *key);
 const uint8_t *bencode_string_data(const ben_obj_t *obj, size_t *len);
 int64_t bencode_int_value(const ben_obj_t *obj);
 
-// Кодирование (возвращает новый буфер, который нужно освободить через free)
+// Кодирование (возвращает новый буфер)
 uint8_t *bencode_encode(const ben_obj_t *obj, size_t *out_len);
 
 #endif
