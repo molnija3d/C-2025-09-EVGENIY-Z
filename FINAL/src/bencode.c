@@ -7,23 +7,24 @@ static const uint8_t *parse_dict(const uint8_t *ptr, const uint8_t *end, ben_obj
 
 
 // Вспомогательная функция для динамического расширения буфера
-typedef struct {
-    uint8_t *data;
-    size_t len;
-    size_t cap;
-} dynbuf_t;
-
 static void dynbuf_init(dynbuf_t *b) {
     b->data = NULL;
     b->len = 0;
     b->cap = 0;
 }
 
+/**
+ * Добавить в динамический буфер данные
+ *
+ * *b - указатель на буфер
+ * *src - указатель на начало данных
+ * n - размер данных
+ */
 static void dynbuf_append(dynbuf_t *b, const void *src, size_t n) {
     if (b->len + n > b->cap) {
         size_t new_cap = b->cap ? b->cap * 2 : 128;
         while (new_cap < b->len + n) new_cap *= 2;
-        b->data = realloc(b->data, new_cap);
+        b->data = xrealloc(b->data, new_cap); 
         b->cap = new_cap;
     }
     memcpy(b->data + b->len, src, n);
@@ -37,7 +38,12 @@ static void dynbuf_append_char(dynbuf_t *b, char c) {
 static void dynbuf_append_str(dynbuf_t *b, const char *s) {
     dynbuf_append(b, s, strlen(s));
 }
-
+/**
+ * Заполнение (кодирование) буфера в формате bencode (для расчета info_hash, общения с трекером)
+ *
+ * @ *b - динамический буфер
+ * @ *obj - bencode объект с данными (после парсинга торрент-файла)
+ */
 static void encode_obj(dynbuf_t *b, const ben_obj_t *obj) {
     char tmp[32];
     switch (obj->type) {
@@ -72,7 +78,10 @@ static void encode_obj(dynbuf_t *b, const ben_obj_t *obj) {
         break;
     }
 }
-
+/**
+ * Создание и заполнение динамического буфера
+ *
+ */
 uint8_t *bencode_encode(const ben_obj_t *obj, size_t *out_len) {
     dynbuf_t b;
     dynbuf_init(&b);
@@ -81,6 +90,13 @@ uint8_t *bencode_encode(const ben_obj_t *obj, size_t *out_len) {
     return b.data; // владение передаётся вызывающему
 }
 
+/**
+ * Декодирование данных в формате bencode.
+ *
+ * @ *data - указатель на данные в формате bencode
+ * @ *size - размер данных
+ * @ ret - указатель на объект с данными ben_obj_t
+  */
 ben_obj_t *bencode_decode(const uint8_t *data, size_t size) {
     const uint8_t *end = data + size;
     ben_obj_t *obj = xmalloc(sizeof(ben_obj_t));
@@ -108,7 +124,18 @@ ben_obj_t *bencode_decode(const uint8_t *data, size_t size) {
     return obj;
 }
 
+/**
+ * парсинг закодированной строки
+ *
+ * @*ptr - указатель на данные
+ * @*end - конец данных
+ * @*obj - указатель на заполняемый объект
+ */
 static const uint8_t *parse_string(const uint8_t *ptr, const uint8_t *end, ben_obj_t *obj) {
+    /* пропускаем ":"
+    * если двоеточия нет - это ошибка
+    * за двоеточием - длина строки
+    */
     const uint8_t *colon = memchr(ptr, ':', end - ptr);
     if (!colon) return NULL;
     long len = strtol((char*)ptr, NULL, 10);
@@ -119,17 +146,33 @@ static const uint8_t *parse_string(const uint8_t *ptr, const uint8_t *end, ben_o
     return colon + 1 + len;
 }
 
+/**
+ * Парсинг закодированного числового значения
+ *
+ * @*ptr - указатель на данные
+ * @*end - конец данных
+ * @*obj - указатель на заполняемый объект
+ */
 static const uint8_t *parse_int(const uint8_t *ptr, const uint8_t *end, ben_obj_t *obj) {
     ptr++; // skip 'i'
+           // ищем 'e', если нет - ошибка, выходим
     const uint8_t *e = memchr(ptr, 'e', end - ptr);
     if (!e) return NULL;
     char *endptr;
     obj->type = BEN_INT;
     obj->value.integer = strtol((char*)ptr, &endptr, 10);
     if (endptr != (char*)e) return NULL; // trailing chars
+    // перемещаем указатель на символ после 'e'
     return e + 1;
 }
 
+/**
+ * Парсинг списка
+ *
+ * @*ptr - указатель на данные
+ * @*end - конец данных
+ * @*obj - указатель на заполняемый объект
+ */
 static const uint8_t *parse_list(const uint8_t *ptr, const uint8_t *end, ben_obj_t *obj) {
     ptr++; // skip 'l'
     obj->type = BEN_LIST;
@@ -152,7 +195,7 @@ static const uint8_t *parse_list(const uint8_t *ptr, const uint8_t *end, ben_obj
             break;
         }
         obj->value.list.count++;
-        obj->value.list.items = realloc(obj->value.list.items,
+        obj->value.list.items = xrealloc(obj->value.list.items,
                                         obj->value.list.count * sizeof(ben_obj_t));
         obj->value.list.items[obj->value.list.count-1] = *item;
         free(item);
@@ -165,6 +208,12 @@ static const uint8_t *parse_list(const uint8_t *ptr, const uint8_t *end, ben_obj
     return ptr + 1;
 }
 
+/**
+ * Парсинг словаря
+ * @*ptr - указатель на данные
+ * @*end - конец данных
+ * @*obj - указатель на заполняемый объект
+ */
 static const uint8_t *parse_dict(const uint8_t *ptr, const uint8_t *end, ben_obj_t *obj) {
     ptr++; // skip 'd'
     obj->type = BEN_DICT;
@@ -199,7 +248,7 @@ static const uint8_t *parse_dict(const uint8_t *ptr, const uint8_t *end, ben_obj
         }
 
         obj->value.dict.count++;
-        obj->value.dict.pairs = realloc(obj->value.dict.pairs,
+        obj->value.dict.pairs = xrealloc(obj->value.dict.pairs,
                                         obj->value.dict.count * sizeof(ben_pair_t));
         ben_pair_t *pair = &obj->value.dict.pairs[obj->value.dict.count-1];
         pair->key = key;

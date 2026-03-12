@@ -4,6 +4,7 @@ volatile int running = 1;
 
 static void signal_handler(int sig) {
     (void)sig;
+    LOG_ERROR("Received SIGNAL %d. Exiting...", sig);
     running = 0;
 }
 
@@ -14,6 +15,7 @@ void setup_signals(void) {
     sa.sa_flags = 0;
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGPIPE, &sa, NULL);
 }
 
 void *xmalloc(size_t size) {
@@ -29,6 +31,15 @@ void *xcalloc(size_t nmemb, size_t size) {
     void *ptr = calloc(nmemb, size);
     if (!ptr) {
         perror("calloc");
+        exit(1);
+    }
+    return ptr;
+}
+
+void *xrealloc(void *data, size_t size) {
+    void *ptr = realloc(data, size);
+    if (!ptr) {
+        perror("realloc");
         exit(1);
     }
     return ptr;

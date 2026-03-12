@@ -29,6 +29,7 @@
 
 void *xmalloc(size_t size);
 void *xcalloc(size_t nmemb, size_t size);
+void *xrealloc(void *data, size_t size);
 void xfree(void *ptr);
 
 // Сигналы

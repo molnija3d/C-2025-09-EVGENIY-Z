@@ -34,6 +34,13 @@ typedef struct ben_pair {
     ben_obj_t *value;
 } ben_pair_t;
 
+
+typedef struct {  
+    uint8_t *data;  // указатель на данные
+    size_t len;    // длина данных
+    size_t cap;   // размер динамического буфера
+} dynbuf_t;
+
 // Декодирование
 ben_obj_t *bencode_decode(const uint8_t *data, size_t size);
 void bencode_free(ben_obj_t *obj);
