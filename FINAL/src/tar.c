@@ -102,6 +102,10 @@ static void write_padding(tar_writer_t *tw) {
 
 /**
  * Создает и заполняет структуру для формирования отслеживания файлов tar- архива
+ *
+ * @*out - укзатель на поток вывода
+ * @*tor - указатель на структуру описывающую torrent
+ * @return tar_writer_t * - возвращает указатель на структуру для работы с tar-архивом
  */
 tar_writer_t *tar_writer_open(FILE *out, const torrent_t *tor) {
     tar_writer_t *tw = xmalloc(sizeof(tar_writer_t));
@@ -113,6 +117,7 @@ tar_writer_t *tar_writer_open(FILE *out, const torrent_t *tor) {
 }
 /**
  * Записывает блок данных в поток
+ *
  * @tw - указатель на структуру tar_writer (отслеживает сколько осталось записать, интекс текущего файла и тд.)
  * @piece_index - номер блока
  * @*data - указатель на данные блока

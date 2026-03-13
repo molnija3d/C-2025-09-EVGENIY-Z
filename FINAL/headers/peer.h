@@ -15,6 +15,7 @@
 #define BT_PROTOCOL "BitTorrent protocol"
 #define BT_PROTOCOL_LEN 19
 #define HANDSHAKE_SIZE 68
+#define PEER_ID_LEN 20
                           
 typedef struct {
     uint32_t ip;   // в сетевом порядке (big-endian)

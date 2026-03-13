@@ -1,5 +1,11 @@
 #include "config.h"
-
+/**
+ * Обработка аргументов командной строки с помощью getopt, заполняет стрктуру cfg
+ *
+ * @argc - количество параметров
+ * @**argv - указатель на список аргументов
+ * @*cfg - структрура для заполнения параметров конфигурации
+ */
 void parse_args(int argc, char **argv, config_t *cfg) {
     memset(cfg, 0, sizeof(config_t));
     cfg->use_stdin = 1;
@@ -30,6 +36,11 @@ void parse_args(int argc, char **argv, config_t *cfg) {
     }
 }
 
+/**
+ * Освобождение памяти под внутреннее содержимое структуры конфигурации
+ *
+ * @*cfg - указатель на структуру
+ */
 void free_config(config_t *cfg) {
     free(cfg->input_file);
     free(cfg->watch_dir);

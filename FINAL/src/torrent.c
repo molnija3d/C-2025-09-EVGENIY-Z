@@ -55,16 +55,21 @@ static char **parse_path_list(const ben_obj_t *list, size_t *out_len) {
     *out_len = count;
     return path;
 }
+/**
+ * Основная функция загрузки. Заполняет структуру torrent_t *tor данными из torrent-файла
+ *
+ * @*data - указатель на данные
+ * @size - размер данных
+ * @*tor - указатель на структуру для заполнения
+ */
 
-// Основная функция загрузки
 int torrent_load_from_memory(const uint8_t *data, size_t size, torrent_t *tor) {
     memset(tor, 0, sizeof(torrent_t));
 
     // Декодируем весь торрент
     ben_obj_t *root = bencode_decode(data, size);
-   if (!root || root->type != BEN_DICT) {
-        bencode_free(root);
-        return -1;
+    if (!root || root->type != BEN_DICT) {
+        goto load_failure_root;
     }
 
     // Извлекаем announce
@@ -86,18 +91,14 @@ int torrent_load_from_memory(const uint8_t *data, size_t size, torrent_t *tor) {
     // Извлекаем info-словарь
     ben_obj_t *info = bencode_dict_get(root, "info");
     if (!info || info->type != BEN_DICT) {
-        bencode_free(root);
-        torrent_free(tor); // чистим уже выделенное
-        return -1;
+        goto load_failure_tor;
     }
 
     // Вычисляем info_hash: кодируем info-словарь в bencode и берём SHA1
     size_t info_enc_len;
     uint8_t *info_enc = bencode_encode(info, &info_enc_len);
     if (!info_enc) {
-        bencode_free(root);
-        torrent_free(tor);
-        return -1;
+        goto load_failure_tor;
     }
     SHA1(info_enc, info_enc_len, tor->info_hash);
     free(info_enc); // нам больше не нужен
@@ -117,9 +118,7 @@ int torrent_load_from_memory(const uint8_t *data, size_t size, torrent_t *tor) {
         const uint8_t *pcs_data = bencode_string_data(pcs, &pcs_len);
         if (pcs_len % 20 != 0) {
             // Неправильная длина
-            bencode_free(root);
-            torrent_free(tor);
-            return -1;
+            goto load_failure_tor;
         }
         tor->num_pieces = pcs_len / 20;
         tor->pieces = xmalloc(pcs_len);
@@ -139,17 +138,13 @@ int torrent_load_from_memory(const uint8_t *data, size_t size, torrent_t *tor) {
             ben_obj_t *file_dict = &files_list->value.list.items[i];
             if (file_dict->type != BEN_DICT) {
                 // Ошибка: элемент списка не словарь
-                torrent_free(tor);
-                bencode_free(root);
-                return -1;
+                goto load_failure_tor;
             }
 
             // Извлекаем length
             ben_obj_t *len_obj = bencode_dict_get(file_dict, "length");
             if (!len_obj || len_obj->type != BEN_INT) {
-                torrent_free(tor);
-                bencode_free(root);
-                return -1;
+                goto load_failure_tor;
             }
             uint64_t file_len = bencode_int_value(len_obj);
             tor->files[i].length = file_len;
@@ -158,16 +153,12 @@ int torrent_load_from_memory(const uint8_t *data, size_t size, torrent_t *tor) {
             // Извлекаем path (список строк)
             ben_obj_t *path_obj = bencode_dict_get(file_dict, "path");
             if (!path_obj || path_obj->type != BEN_LIST) {
-                torrent_free(tor);
-                bencode_free(root);
-                return -1;
+                goto load_failure_tor;
             }
             size_t path_len;
             char **path = parse_path_list(path_obj, &path_len);
             if (!path) {
-                torrent_free(tor);
-                bencode_free(root);
-                return -1;
+                goto load_failure_tor;
             }
             tor->files[i].path = path;
             tor->files[i].path_len = path_len;
@@ -177,9 +168,7 @@ int torrent_load_from_memory(const uint8_t *data, size_t size, torrent_t *tor) {
         ben_obj_t *len_obj = bencode_dict_get(info, "length");
         if (!len_obj || len_obj->type != BEN_INT) {
             // Нет ни files, ни length — ошибочный торрент
-            bencode_free(root);
-            torrent_free(tor);
-            return -1;
+            goto load_failure_tor;
         }
         tor->file_count = 1;
         tor->files = xcalloc(1, sizeof(file_t));
@@ -195,8 +184,22 @@ int torrent_load_from_memory(const uint8_t *data, size_t size, torrent_t *tor) {
 
     bencode_free(root);
     return 0;
+
+load_failure_tor: 
+    torrent_free(tor); // очистка, при ошибках в данных
+load_failure_root:
+    bencode_free(root); // ошибка выделения памяти под корень
+    return -1;
+
 }
 
+/**
+ * Загрузка торрента из файла
+ *
+ * @ *filename - указатель на путь к файлу
+ * @ *tor - указатель на структуру, которую надо заполнимить
+ * @ return - успех/ошибка
+ */
 int torrent_load(const char *filename, torrent_t *tor) {
     void *data;
     size_t size = read_file(filename, &data);

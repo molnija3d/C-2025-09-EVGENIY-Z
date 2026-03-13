@@ -23,6 +23,13 @@ static int mkdir_p(const char *path) {
     return 0;
 }
 
+/**
+ * Создает и инициализирует объект хранилища 
+ * 
+ * @*cfg - указатель на конфигурацию
+ * @*tor - указатель на структуру, описывающую торрент
+ * @return storage_t * - возвращает указатель на инициализированный объект хранилища
+ */
 storage_t *storage_open(const config_t *cfg, const torrent_t *tor) {
     if (cfg->output_file && tor->file_count > 1) {
         LOG_ERROR("Multi-file torrent cannot be saved to a single file. Use -O <directory>");

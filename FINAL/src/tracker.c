@@ -34,10 +34,10 @@ char *url_encode(const uint8_t *hash) {
 void generate_peer_id(uint8_t *peer_id) {
     srand(time(NULL));
     memcpy(peer_id, PEER_PREFIX , sizeof(PEER_PREFIX));
-    for (int i = 8; i < 20; i++) {
+    for (int i = 8; i < PEER_ID_LEN ; i++) {
         peer_id[i] = '0' + (rand() % 10);
     }
-    peer_id[20] = '\0';
+    peer_id[PEER_ID_LEN] = '\0';
     LOG_DEBUG("Client_peer_id: %s", peer_id);
 }
 

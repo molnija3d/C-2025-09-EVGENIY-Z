@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 
     log_info_about_torrent(&tor);
 
-    uint8_t my_peer_id[20];
+    uint8_t my_peer_id[PEER_ID_LEN + 1];
     generate_peer_id(my_peer_id);
     peer_t *peers = NULL;
 
