@@ -197,7 +197,7 @@ static const uint8_t *parse_list(const uint8_t *ptr, const uint8_t *end, ben_obj
         obj->value.list.count++;
         obj->value.list.items = xrealloc(obj->value.list.items,
                                         obj->value.list.count * sizeof(ben_obj_t));
-        obj->value.list.items[obj->value.list.count-1] = *item;
+        obj->value.list.items[obj->value.list.count-1] = *item; //копируем по значению
         free(item);
         ptr = next;
     }
@@ -251,7 +251,7 @@ static const uint8_t *parse_dict(const uint8_t *ptr, const uint8_t *end, ben_obj
         obj->value.dict.pairs = xrealloc(obj->value.dict.pairs,
                                         obj->value.dict.count * sizeof(ben_pair_t));
         ben_pair_t *pair = &obj->value.dict.pairs[obj->value.dict.count-1];
-        pair->key = key;
+        pair->key = key; 
         pair->key_len = key_obj.value.string.len;
         pair->value = val_obj;
 
@@ -263,6 +263,12 @@ static const uint8_t *parse_dict(const uint8_t *ptr, const uint8_t *end, ben_obj
     return ptr + 1;
 }
 
+/**
+ * Очистка объекта ben_obj_t
+ * @obj - указатель на объект
+ * @free_self - флаг, что нужно очисить список, вложенный в список...
+ *
+ */
 static void bencode_free_internal(ben_obj_t *obj, int free_self) {
     if (!obj) return;
     switch (obj->type) {
@@ -293,10 +299,22 @@ static void bencode_free_internal(ben_obj_t *obj, int free_self) {
     }
 }
 
+/**
+ * Обертка для функции по очистке объекта benobj_t
+ * 
+ * @*obj - указатель на объект
+ */
 void bencode_free(ben_obj_t *obj) {
     bencode_free_internal(obj, 1);
 }
 
+
+/**
+ * Функция находит и возвращает значение (benobj_t) по ключу
+ * @*dict - указатель на объект, содержащий словарь
+ * @*key - указатель на ключ
+ * @return - benobj_t
+ */
 ben_obj_t *bencode_dict_get(const ben_obj_t *dict, const char *key) {
     if (!dict || dict->type != BEN_DICT) return NULL;
     for (size_t i = 0; i < dict->value.dict.count; i++) {
@@ -306,12 +324,25 @@ ben_obj_t *bencode_dict_get(const ben_obj_t *dict, const char *key) {
     return NULL;
 }
 
+/**
+ * Возвращает строку из объекта ben_obj_t
+ * 
+ * @*obj - указатель на объект со строкой
+ * @*len - указатель на длину строки (возвращаемое значение)
+ * @return - указатель на строку
+ */
 const uint8_t *bencode_string_data(const ben_obj_t *obj, size_t *len) {
     if (!obj || obj->type != BEN_STRING) return NULL;
     *len = obj->value.string.len;
     return obj->value.string.data;
 }
 
+/**
+ * Возвращает значение типа int из объекта ben_onj_t
+ * 
+ * @*obj - указатель на объект, содержащий int
+ * @return - значение типа int
+ */
 int64_t bencode_int_value(const ben_obj_t *obj) {
     if (!obj || obj->type != BEN_INT) return 0;
     return obj->value.integer;
