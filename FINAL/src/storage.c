@@ -1,6 +1,11 @@
 #include "storage.h"
 
-// Вспомогательная функция для рекурсивного создания директорий
+/** 
+ * Вспомогательная функция для рекурсивного создания директорий
+ * 
+ * @ *path -полный путь до файла (без имени файла)
+ * @ return успех/ошибка
+ */
 static int mkdir_p(const char *path) {
     char tmp[4096];
     char *p = NULL;
@@ -46,7 +51,7 @@ storage_t *storage_open(const config_t *cfg, const torrent_t *tor) {
     for (size_t i = 0; i < tor->file_count; i++) {
         file_info_t *fi = &st->files[i];
         const file_t *tf = &tor->files[i];
-
+         // offset - конец предыдущего файла
         fi->offset = current_offset;
         fi->length = tf->length;
 
@@ -57,6 +62,7 @@ storage_t *storage_open(const config_t *cfg, const torrent_t *tor) {
             strncpy(full_path, st->extract_dir, sizeof(full_path) - 1);
             strncat(full_path, "/", sizeof(full_path) - strlen(full_path) - 1);
         }
+        // path_len - количество компонентов пути (directory, file name и т.д.)
         for (size_t j = 0; j < tf->path_len; j++) {
             strncat(full_path, tf->path[j], sizeof(full_path) - strlen(full_path) - 1);
             if (j < tf->path_len - 1) {
@@ -94,10 +100,18 @@ storage_t *storage_open(const config_t *cfg, const torrent_t *tor) {
     return st;
 }
 
+/**
+ * Записывает в файл полученные данные(или их часть) начиная с нужной позиции
+ *
+ * @ *st - указатель на структуру хранилища, вней хронится список файлов и их параметры (дескриптор, путь, размер, имя и т.д.)
+ * @ piece_index - номер части данных во входящем потоке
+ * @ *data - данные
+ * @ len - длина данных
+ */
 void storage_write(storage_t *st, uint32_t piece_index, const uint8_t *data, uint32_t len) {
     uint64_t piece_start = (uint64_t)piece_index * st->piece_length;
     uint64_t piece_end = piece_start + len;
-
+    // проходимся по всему массиву файлов
     for (size_t i = 0; i < st->file_count; i++) {
         file_info_t *fi = &st->files[i];
         uint64_t file_start = fi->offset;
@@ -126,6 +140,11 @@ void storage_write(storage_t *st, uint32_t piece_index, const uint8_t *data, uin
     }
 }
 
+/**
+ * Совобождение памяти объекта хранилища
+ *
+ * @*st -указатель на объект хранилища
+ */
 void storage_close(storage_t *st) {
     if (!st) return;
     for (size_t i = 0; i < st->file_count; i++) {
