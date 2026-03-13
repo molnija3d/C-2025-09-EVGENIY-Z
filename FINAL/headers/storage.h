@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
+#define PATH_LEN 4096
 
 // Внутренняя структура для представления одного файла в хранилище
 typedef struct {

@@ -7,7 +7,7 @@
  * @ return успех/ошибка
  */
 static int mkdir_p(const char *path) {
-    char tmp[4096];
+    char tmp[PATH_LEN];
     char *p = NULL;
     size_t len;
     snprintf(tmp, sizeof(tmp), "%s", path);
@@ -57,7 +57,7 @@ storage_t *storage_open(const config_t *cfg, const torrent_t *tor) {
 
         // Построение полного пути
         // Используем динамический буфер
-        char full_path[4096] = {0};
+        char full_path[PATH_LEN] = {0};
         if (st->extract_dir) {
             strncpy(full_path, st->extract_dir, sizeof(full_path) - 1);
             strncat(full_path, "/", sizeof(full_path) - strlen(full_path) - 1);

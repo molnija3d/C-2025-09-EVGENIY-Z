@@ -7,46 +7,25 @@
 
 #define TAR_BLOCK_SIZE 512
 
-
-/**
- * Осуществляет выравнивание.
- * @param tw    Контекст
- */
-static void write_padding(tar_writer_t *tw);
-
-/**
- * Формирует загаловок файла в архиве
- * @param tw    Контекст tar-писателя
- * @param path  путь файла
- * @param size  размер
-*/
-static void write_header(tar_writer_t *tw, const char *path, uint64_t size);
-
-/**
- * Проверяет контрольную сумму заголовка 
- * @param *hder    Контекст tar-писателя
-*/
-static unsigned int calculate_checksum(const tar_header_t *hdr);
-
-/**
- * Преобразует в строку число в 8-ричной системе
- * @param val   значение
- * @param *buf  выходной буфер
- * @param size  размер
-*/
-static void oct_to_str(uint64_t val, char *buf, int size);
-
-/* Преобразование числа в восьмеричную строку с завершающим нулём и пробелом */
-
+/** 
+ * Запись значения в восьмеричную строку с завершающим нулём и пробелом 
+ *
+ * @val - числовое значение
+ * @*buf - указатель на буфер для записи
+ * @size - размер буфера
+ * */
 static void oct_to_str(uint64_t val, char *buf, int size) {
     char fmt[16];
     snprintf(fmt, sizeof(fmt), "%%0%do ", size - 2); // например, "%011o " для size=12
     snprintf(buf, size, fmt, (unsigned int)val);
 }
 
-
-/* Вычисление контрольной суммы заголовка */
-
+/** 
+ * Вычисление контрольной суммы заголовка 
+ *
+ * @*hdr - указатель на заголовок tar_header_t
+ * @return - контрольная сумма
+ */
 static unsigned int calculate_checksum(const tar_header_t *hdr) {
     const unsigned char *p = (const unsigned char *)hdr;
     unsigned int sum = 0;
@@ -56,10 +35,13 @@ static unsigned int calculate_checksum(const tar_header_t *hdr) {
     return sum;
 }
 
-
-
-/* Запись заголовка для файла с именем path и размером size */
-
+/** 
+ * Запись заголовка для файла с именем path и размером size 
+ * 
+ * @*tw - указатель на объект tar_writer_t
+ * @*path - полный путь
+ * @size - размер
+ * */
 static void write_header(tar_writer_t *tw, const char *path, uint64_t size) {
     tar_header_t hdr;
     memset(&hdr, 0, sizeof(hdr));
@@ -87,8 +69,11 @@ static void write_header(tar_writer_t *tw, const char *path, uint64_t size) {
     tw->total_written += TAR_BLOCK_SIZE;
 }
 
-/* Добавляет паддинг до следующей границы 512 байт, если необходимо */
-
+/**
+ * Добавляет паддинг до следующей границы 512 байт, если необходимо
+ *
+ * @*tw -указатель на объект tar_writer_t
+ */
 static void write_padding(tar_writer_t *tw) {
     uint64_t mod = tw->total_written % TAR_BLOCK_SIZE;
     if (mod != 0) {
@@ -98,7 +83,6 @@ static void write_padding(tar_writer_t *tw) {
         tw->total_written += pad;
     }
 }
-
 
 /**
  * Создает и заполняет структуру для формирования отслеживания файлов tar- архива
@@ -115,6 +99,7 @@ tar_writer_t *tar_writer_open(FILE *out, const torrent_t *tor) {
     tw->current_file_index = -1;
     return tw;
 }
+
 /**
  * Записывает блок данных в поток
  *
@@ -172,6 +157,11 @@ void tar_writer_write(tar_writer_t *tw, uint32_t piece_index, const uint8_t *dat
     }
 }
 
+/**
+ * Освобождение памяти под объект tar_writer_t
+ *
+ * @*tw -указатель на объект
+ */
 void tar_writer_close(tar_writer_t *tw) {
     if (!tw) return;
 
