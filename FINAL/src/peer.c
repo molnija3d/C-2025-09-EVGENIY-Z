@@ -13,25 +13,25 @@ int peer_handshake(int sock, const torrent_t *tor, const uint8_t *my_peer_id, ui
 
     if (send_full_timeout(sock, hs_out, HANDSHAKE_SIZE, 10000) < 0) {
         LOG_ERROR("Failed to send handshake");
-        return -1;
+        goto handshake_error;
     }
 
     if (recv_full_timeout(sock, hs_in, HANDSHAKE_SIZE, 10000) < 0) {
         LOG_ERROR("Failed to receive handshake");
-        return -1;
+        goto handshake_error;
     }
 
     // Проверяем протокол
     if (hs_in[0] != BT_PROTOCOL_LEN || memcmp(hs_in + 1, BT_PROTOCOL, BT_PROTOCOL_LEN) != 0) {
         LOG_ERROR("Invalid protocol in handshake");
-        return -1;
+        goto handshake_error;
     }
 
 
     // Проверяем info_hash
     if (memcmp(hs_in + 28, tor->info_hash, 20) != 0) {
         LOG_ERROR("Info hash mismatch in handshake");
-        return -1;
+        goto handshake_error;
     }
 
     if (peer_id_out) {
@@ -39,6 +39,8 @@ int peer_handshake(int sock, const torrent_t *tor, const uint8_t *my_peer_id, ui
     }
 
     return 0;
+handshake_error:
+    return -1;
 }
 
 int peer_send_interested(int sock) {
