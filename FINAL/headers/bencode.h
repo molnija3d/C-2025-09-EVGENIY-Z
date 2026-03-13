@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+// Типы объектов ben_obj (строка, число, список, словарь)
 typedef enum {
     BEN_STRING,
     BEN_INT,
@@ -18,6 +19,7 @@ typedef enum {
     BEN_DICT
 } ben_type_t;
 
+// Каркас объекта ben_obj
 typedef struct ben_obj {
     ben_type_t type;
     union {
@@ -28,13 +30,14 @@ typedef struct ben_obj {
     } value;
 } ben_obj_t;
 
+// Пара ключ:значение
 typedef struct ben_pair {
     char *key;          // ключ как null-терминированная строка
     size_t key_len;
     ben_obj_t *value;
 } ben_pair_t;
 
-
+// Динамический буфер
 typedef struct {  
     uint8_t *data;  // указатель на данные
     size_t len;    // длина данных

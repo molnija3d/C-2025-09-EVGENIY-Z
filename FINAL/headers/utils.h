@@ -24,6 +24,7 @@
 
 #define TORRENT_BUFFER_CAPACITY 4096
 
+// макросы для работы с битовыми полями (обмен данными с торрент-трекером)
 #define IS_DONE(pieces, idx) ((pieces)[(idx)/8] & (1 << (7 - ((idx)%8))))
 #define MARK_DONE(pieces, idx) ((pieces)[(idx)/8]  |= (1<< (7 - ((idx)%8))))
 

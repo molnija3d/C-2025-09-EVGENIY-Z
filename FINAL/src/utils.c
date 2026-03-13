@@ -2,12 +2,21 @@
 
 volatile int running = 1;
 
+/**
+ * Обработчик сигналов
+ * 
+ * @sig - номер сигнала
+ */
 static void signal_handler(int sig) {
     (void)sig;
     LOG_ERROR("Received SIGNAL %d. Exiting...", sig);
     running = 0;
 }
 
+/**
+ * Настраивает обработку сигналов
+ *
+ */
 void setup_signals(void) {
     struct sigaction sa;
     sa.sa_handler = signal_handler;
@@ -18,6 +27,12 @@ void setup_signals(void) {
     sigaction(SIGPIPE, &sa, NULL);
 }
 
+/**
+ * Набор функций для работы с памятью (xmalloc, xcalloc, xrealloc, xfree)
+ * В отличии от библиотечных, в этих функциях проверяется выделилась памят или нет. 
+ * Выводится ошибка в stderr и завершается работа программы
+ *
+ */
 void *xmalloc(size_t size) {
     void *ptr = malloc(size);
     if (!ptr) {
@@ -51,6 +66,14 @@ void xfree(void *ptr) {
     }
 }
 
+
+/**
+ * Читает данные из файла в буфер в памяти
+ *
+ * @*path - указатель на путь
+ * @**data - указатель на указатель на буфер в памяти
+ * @return - размер данных
+ */
 size_t read_file(const char *path, void **data) {
     FILE *f = fopen(path, "rb");
     if (!f) {
@@ -66,6 +89,12 @@ size_t read_file(const char *path, void **data) {
     return size;
 }
 
+/**
+ * Читает данные из входящего потока и записывает в буфер
+ * 
+ * @**out - указатель на указатель на буфер в памяти
+ * @return - размер данных
+ */
 size_t read_stdin(uint8_t **out) {
     size_t capacity = TORRENT_BUFFER_CAPACITY;
     size_t size = 0;
