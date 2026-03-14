@@ -94,13 +94,14 @@ int tracker_get_peers(const torrent_t *tor, const uint8_t *peer_id, peer_t **pee
         curl_easy_cleanup(curl);
         return -1;
     }
-    char url[2048];
+    char url[URL_LEN];
 
     snprintf(url, sizeof(url),
-             "%s?info_hash=%s&peer_id=%s&port=60703&uploaded=0&downloaded=0&left=%llu&compact=1&event=started",
+             "%s?info_hash=%s&peer_id=%s&port=%d&uploaded=0&downloaded=0&left=%llu&compact=1&event=started",
              tor->announce ? tor->announce : "",
              info_hash_enc,
              peer_id_enc,
+             CLIENT_PORT,
              (unsigned long long)tor->total_length);
 
 
@@ -133,7 +134,7 @@ int tracker_get_peers(const torrent_t *tor, const uint8_t *peer_id, peer_t **pee
         goto cleanup_bencode;
     }
 
-    // Извлекаем peers
+    // Извлекаем peers (пара ключ-значение. Ключ - peers, значение - указатель на пиры в формате bencoded - строки)
     ben_obj_t *peers_obj = bencode_dict_get(resp, "peers");
     if (!peers_obj || peers_obj->type != BEN_STRING) {
         LOG_ERROR("No peers field in tracker response or not a string");
@@ -142,7 +143,8 @@ int tracker_get_peers(const torrent_t *tor, const uint8_t *peer_id, peer_t **pee
 
     size_t peers_len;
     const uint8_t *peers_data = bencode_string_data(peers_obj, &peers_len);
-    if (peers_len % 6 != 0) {
+    //на каждый пир отводится 6 байт: 4 байта на ip адрес, 2 байта на порт.
+    if (peers_len % 6 != 0) { 
         LOG_ERROR("Invalid peers length: %zu (should be multiple of 6)", peers_len);
         goto cleanup_bencode;
     }
@@ -151,6 +153,7 @@ int tracker_get_peers(const torrent_t *tor, const uint8_t *peer_id, peer_t **pee
     *peers_out = xmalloc(peer_count * sizeof(peer_t));
 
     for (int i = 0; i < peer_count; i++) {
+        // данные уже находятся в сетевом порядке, первые 4 байта - ip-адрес, вторые 4 байта - порт
         memcpy(&(*peers_out)[i].ip, peers_data + i*6, 4);
         memcpy(&(*peers_out)[i].port, peers_data + i*6 + 4, 2);
     }
