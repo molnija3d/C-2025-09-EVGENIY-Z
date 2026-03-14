@@ -1,6 +1,11 @@
 #include "tracker.h"
 
-
+/**
+ *
+ *
+ *
+ *
+ */
 static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
     size_t realsize = size * nmemb;
     memory_t *mem = (memory_t *)userp;
@@ -17,7 +22,11 @@ static size_t write_callback(void *contents, size_t size, size_t nmemb, void *us
     return realsize;
 }
 
-// Преобразование 20-байтного значения (info_hash, peer_id) в URL-encoded строку
+/**
+ * Преобразование 20-байтного значения (info_hash, peer_id) в URL-encoded строку
+ *
+ *
+ */
 char *url_encode(const uint8_t *hash) {
     char *encoded = malloc(3*20 + 1); // каждый байт кодируется как %XX + нуль
     if (!encoded) return NULL;
@@ -30,7 +39,13 @@ char *url_encode(const uint8_t *hash) {
     return encoded;
 }
 
-// Генерация случайного peer_id (20 байт в виде строки)
+/**
+ * Генерация случайного peer_id (20 байт в виде строки)
+ *
+ *
+ *
+ *
+ */
 void generate_peer_id(uint8_t *peer_id) {
     srand(time(NULL));
     memcpy(peer_id, PEER_PREFIX , sizeof(PEER_PREFIX));
@@ -41,6 +56,13 @@ void generate_peer_id(uint8_t *peer_id) {
     LOG_DEBUG("Client_peer_id: %s", peer_id);
 }
 
+/**
+ *
+ *
+ *
+ *
+ *
+ */
 int tracker_get_peers(const torrent_t *tor, const uint8_t *peer_id, peer_t **peers_out) {
     CURL *curl;
     CURLcode res;
