@@ -1,10 +1,13 @@
 #include "tracker.h"
 
 /**
+ * Функция обратного вызова для libcurl, записывает данные (ответ трекера)
  *
- *
- *
- *
+ * @param *contents содержимое ответа
+ * @param size размер данных
+ * @param nmemb количество
+ * @param *userp указатель на буфер пользователя (структура memory_t chunk)
+ * @return размер записанных данных   
  */
 static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
     size_t realsize = size * nmemb;
@@ -25,14 +28,15 @@ static size_t write_callback(void *contents, size_t size, size_t nmemb, void *us
 /**
  * Преобразование 20-байтного значения (info_hash, peer_id) в URL-encoded строку
  *
- *
+ * @param *data указатель на данные (hash, peer_id и т.д.)
+ * @return указатель на строку
  */
-char *url_encode(const uint8_t *hash) {
+char *url_encode(const uint8_t *data) {
     char *encoded = malloc(3*20 + 1); // каждый байт кодируется как %XX + нуль
     if (!encoded) return NULL;
     char *p = encoded;
     for (int i = 0; i < 20; i++) {
-        sprintf(p, "%%%02X", hash[i]);
+        sprintf(p, "%%%02X", data[i]);
         p += 3;
     }
     *p = '\0';
@@ -42,9 +46,7 @@ char *url_encode(const uint8_t *hash) {
 /**
  * Генерация случайного peer_id (20 байт в виде строки)
  *
- *
- *
- *
+ * @param *peer_id - указатель на генерируемый peer_id
  */
 void generate_peer_id(uint8_t *peer_id) {
     srand(time(NULL));
@@ -57,11 +59,11 @@ void generate_peer_id(uint8_t *peer_id) {
 }
 
 /**
- *
- *
- *
- *
- *
+ * Получает список пиров от трекера
+ * @param *tor[in] указатель на заполненный объект с данными о торренте
+ * @param *peer_id[in] указатель на peer_id клиента
+ * @param **peers_out[out] указатель на массив с пирами
+ * @return Количество пиров
  */
 int tracker_get_peers(const torrent_t *tor, const uint8_t *peer_id, peer_t **peers_out) {
     CURL *curl;
