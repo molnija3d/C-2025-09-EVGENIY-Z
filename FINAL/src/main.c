@@ -15,15 +15,15 @@
 
 /**
  * Зааполняет данные из торрента в структуру tor
- * @cfg - конфигурация (пути, контекст вывода и т.д.)
- * @tor - данные о торренте
+ * @param cfg - конфигурация (пути, контекст вывода и т.д.)
+ * @param tor - данные о торренте
  *
  */
 int load_torrent(torrent_t *tor, config_t *cfg);
 
 /**
  * Выводит загруженные данные
- * @tor - Торрент
+ * @param tor - Торрент
  */
 void log_info_about_torrent(torrent_t *tor);
 
@@ -43,7 +43,6 @@ static int setup_output_context(config_t *cfg, const torrent_t *tor);
  * @param peer_count  Количество пиров в массиве.
  * @param my_peer_id  Наш идентификатор (20 байт).
  * @param cfg         Указатель на конфигурацию (содержит информацию о выводе).
- *
  * @return Количество оставшихся (нескачанных) кусков. 0, если все скачаны успешно.
  */
 int download_pieces(const torrent_t *tor, const peer_t *peers, int peer_count, const uint8_t my_peer_id[20],const config_t *cfg);
@@ -188,7 +187,6 @@ static int setup_output_context(config_t *cfg, const torrent_t *tor) {
  * @param peer_count  Количество пиров в массиве.
  * @param my_peer_id  Наш идентификатор (20 байт).
  * @param cfg         Указатель на конфигурацию (содержит информацию о выводе).
- *
  * @return Количество оставшихся (нескачанных) кусков. 0, если все скачаны успешно.
  */
 int download_pieces(const torrent_t *tor, const peer_t *peers, int peer_count,
@@ -284,7 +282,6 @@ int download_pieces(const torrent_t *tor, const peer_t *peers, int peer_count,
             }
             free(buf);
         }
-
         peer_close(&peer);
     }
 
@@ -294,7 +291,6 @@ int download_pieces(const torrent_t *tor, const peer_t *peers, int peer_count,
     } else {
         storage_close((storage_t*)cfg->out_ctx);
     }
-
 
     free(pieces_done);
     return pieces_left;

@@ -5,8 +5,10 @@ static const uint8_t *parse_string(const uint8_t *ptr, const uint8_t *end, ben_o
 static const uint8_t *parse_list(const uint8_t *ptr, const uint8_t *end, ben_obj_t *obj);
 static const uint8_t *parse_dict(const uint8_t *ptr, const uint8_t *end, ben_obj_t *obj);
 
-
-// Вспомогательная функция для динамического расширения буфера
+/**
+ * Вспомогательная функция для динамического расширения буфера
+ * @param *b указатель на динамический буфер
+ */
 static void dynbuf_init(dynbuf_t *b) {
     b->data = NULL;
     b->len = 0;
@@ -16,9 +18,9 @@ static void dynbuf_init(dynbuf_t *b) {
 /**
  * Добавить в динамический буфер данные
  *
- * *b - указатель на буфер
- * *src - указатель на начало данных
- * n - размер данных
+ * @param *b указатель на буфер
+ * @param *src указатель на начало данных
+ * @param n размер данных
  */
 static void dynbuf_append(dynbuf_t *b, const void *src, size_t n) {
     if (b->len + n > b->cap) {
@@ -41,8 +43,8 @@ static void dynbuf_append_str(dynbuf_t *b, const char *s) {
 /**
  * Заполнение (кодирование) буфера в формате bencode (для расчета info_hash, общения с трекером)
  *
- * @ *b - динамический буфер
- * @ *obj - bencode объект с данными (после парсинга торрент-файла)
+ * @param *b динамический буфер
+ * @param *obj bencode объект с данными (после парсинга торрент-файла)
  */
 static void encode_obj(dynbuf_t *b, const ben_obj_t *obj) {
     char tmp[32];
@@ -93,9 +95,9 @@ uint8_t *bencode_encode(const ben_obj_t *obj, size_t *out_len) {
 /**
  * Декодирование данных в формате bencode. Torrent файл представляет свобой словарь, содержаий пары ключ:значение.
  *
- * @ *data - указатель на данные в формате bencode
- * @ *size - размер данных
- * @ ret - указатель на объект с данными ben_obj_t
+ * @param *data указатель на данные в формате bencode
+ * @param *size размер данных
+ * @return указатель на объект с данными ben_obj_t
   */
 ben_obj_t *bencode_decode(const uint8_t *data, size_t size) {
     const uint8_t *end = data + size;
@@ -127,9 +129,10 @@ ben_obj_t *bencode_decode(const uint8_t *data, size_t size) {
 /**
  * парсинг закодированной строки
  *
- * @*ptr - указатель на данные
- * @*end - конец данных
- * @*obj - указатель на заполняемый объект
+ * @param *ptr указатель на данные
+ * @param *end конец данных
+ * @param *obj указатель на заполняемый объект
+ * @return указатель на следующий участок для обработки или NULL, если больше нет данных
  */
 static const uint8_t *parse_string(const uint8_t *ptr, const uint8_t *end, ben_obj_t *obj) {
     /* пропускаем ":"
@@ -149,9 +152,10 @@ static const uint8_t *parse_string(const uint8_t *ptr, const uint8_t *end, ben_o
 /**
  * Парсинг закодированного числового значения
  *
- * @*ptr - указатель на данные
- * @*end - конец данных
- * @*obj - указатель на заполняемый объект
+ * @param *ptr указатель на данные
+ * @param *end конец данных
+ * @param *obj указатель на заполняемый объект
+ * @return указатель на следующий участок для обработки или NULL, если больше нет данных
  */
 static const uint8_t *parse_int(const uint8_t *ptr, const uint8_t *end, ben_obj_t *obj) {
     ptr++; // skip 'i'
@@ -169,9 +173,10 @@ static const uint8_t *parse_int(const uint8_t *ptr, const uint8_t *end, ben_obj_
 /**
  * Парсинг списка
  *
- * @*ptr - указатель на данные
- * @*end - конец данных
- * @*obj - указатель на заполняемый объект
+ * @param *ptr указатель на данные
+ * @param *end конец данных
+ * @param *obj указатель на заполняемый объект
+ * @return указатель на следующий участок для обработки или NULL, если больше нет данных
  */
 static const uint8_t *parse_list(const uint8_t *ptr, const uint8_t *end, ben_obj_t *obj) {
     ptr++; // skip 'l'
@@ -210,9 +215,10 @@ static const uint8_t *parse_list(const uint8_t *ptr, const uint8_t *end, ben_obj
 
 /**
  * Парсинг словаря
- * @*ptr - указатель на данные
- * @*end - конец данных
- * @*obj - указатель на заполняемый объект
+ * @param *ptr указатель на данные
+ * @param *end конец данных
+ * @param *obj указатель на заполняемый объект
+ * @return указатель на следующий участок для обработки или NULL, если больше нет данных
  */
 static const uint8_t *parse_dict(const uint8_t *ptr, const uint8_t *end, ben_obj_t *obj) {
     ptr++; // skip 'd'
@@ -265,8 +271,8 @@ static const uint8_t *parse_dict(const uint8_t *ptr, const uint8_t *end, ben_obj
 
 /**
  * Очистка объекта ben_obj_t
- * @obj - указатель на объект
- * @free_self - флаг, что нужно очисить список, вложенный в список...
+ * @param obj указатель на объект
+ * @param free_self флаг, что нужно очисить список, вложенный в список...
  *
  */
 static void bencode_free_internal(ben_obj_t *obj, int free_self) {
@@ -302,7 +308,7 @@ static void bencode_free_internal(ben_obj_t *obj, int free_self) {
 /**
  * Обертка для функции по очистке объекта benobj_t
  * 
- * @*obj - указатель на объект
+ * @param *obj указатель на объект
  */
 void bencode_free(ben_obj_t *obj) {
     bencode_free_internal(obj, 1);
@@ -311,9 +317,9 @@ void bencode_free(ben_obj_t *obj) {
 
 /**
  * Функция находит и возвращает значение (benobj_t) по ключу
- * @*dict - указатель на объект, содержащий словарь
- * @*key - указатель на ключ
- * @return - benobj_t
+ * @param *dict указатель на объект, содержащий словарь
+ * @param *key указатель на ключ
+ * @return benobj_t
  */
 ben_obj_t *bencode_dict_get(const ben_obj_t *dict, const char *key) {
     if (!dict || dict->type != BEN_DICT) return NULL;
@@ -327,9 +333,9 @@ ben_obj_t *bencode_dict_get(const ben_obj_t *dict, const char *key) {
 /**
  * Возвращает строку из объекта ben_obj_t
  * 
- * @*obj - указатель на объект со строкой
- * @*len - указатель на длину строки (возвращаемое значение)
- * @return - указатель на строку
+ * @param *obj указатель на объект со строкой
+ * @param *len указатель на длину строки (возвращаемое значение)
+ * @return указатель на строку
  */
 const uint8_t *bencode_string_data(const ben_obj_t *obj, size_t *len) {
     if (!obj || obj->type != BEN_STRING) return NULL;
@@ -340,8 +346,8 @@ const uint8_t *bencode_string_data(const ben_obj_t *obj, size_t *len) {
 /**
  * Возвращает значение типа int из объекта ben_onj_t
  * 
- * @*obj - указатель на объект, содержащий int
- * @return - значение типа int
+ * @param *obj указатель на объект, содержащий int
+ * @return значение типа int
  */
 int64_t bencode_int_value(const ben_obj_t *obj) {
     if (!obj || obj->type != BEN_INT) return 0;
