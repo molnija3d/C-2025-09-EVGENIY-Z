@@ -13,7 +13,7 @@
 #include "utils.h"
 #define PEER_PREFIX "-TR2940-"
 #define URL_LEN 2048
-#define CLIENT_PORT 60703
+#define CLIENT_PORT 41713
 
 // Структура для накопления данных ответа
 typedef struct memory {
