@@ -13,39 +13,10 @@
 #include "network.h"
 #include "tar.h"
 
-/**
- * Зааполняет данные из торрента в структуру tor
- * @param cfg - конфигурация (пути, контекст вывода и т.д.)
- * @param tor - данные о торренте
- *
- */
-int load_torrent(torrent_t *tor, config_t *cfg);
-
-/**
- * Выводит загруженные данные
- * @param tor - Торрент
- */
-void log_info_about_torrent(torrent_t *tor);
-
-/**
- * Инициализирует контекст вывода в зависимости от настроек.
- * @param cfg       Конфигурация
- * @param tor       Торрент (входной параметр, только для чтения)
- * @return 0 при успехе, -1 при ошибке (ресурсы не освобождаются, вызывающий должен сделать cleanup)
- */
+static int load_torrent(torrent_t *tor, config_t *cfg);
+static void log_info_about_torrent(torrent_t *tor);
 static int setup_output_context(config_t *cfg, const torrent_t *tor); 
-
-/**
- * Загружает все недостающие куски торрента, перебирая пиров по очереди.
- *
- * @param tor         Указатель на структуру торрента.
- * @param peers       Массив доступных пиров.
- * @param peer_count  Количество пиров в массиве.
- * @param my_peer_id  Наш идентификатор (20 байт).
- * @param cfg         Указатель на конфигурацию (содержит информацию о выводе).
- * @return Количество оставшихся (нескачанных) кусков. 0, если все скачаны успешно.
- */
-int download_pieces(const torrent_t *tor, const peer_t *peers, int peer_count, const uint8_t my_peer_id[20],const config_t *cfg);
+static int download_pieces(const torrent_t *tor, const peer_t *peers, int peer_count, const uint8_t my_peer_id[20],const config_t *cfg);
 
 int main(int argc, char **argv) {
     config_t cfg;
@@ -91,7 +62,13 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-int load_torrent(torrent_t *tor, config_t *cfg) {
+ /**
+ * Зааполняет данные из торрента в структуру tor
+ * @param cfg - конфигурация (пути, контекст вывода и т.д.)
+ * @param tor - данные о торренте
+ *
+ */
+static int load_torrent(torrent_t *tor, config_t *cfg) {
     if (cfg->use_stdin) {
         LOG_INFO("Loading torrent from stdin");
         uint8_t *data;
@@ -125,7 +102,11 @@ load_error:
     return 1;
 }
 
-void log_info_about_torrent(torrent_t *tor) {
+/**
+ * Выводит информацию о торренте
+ * @param tor - Торрент
+ */
+static void log_info_about_torrent(torrent_t *tor) {
 
 // Выводим информацию
     LOG_INFO("Announce: %s", tor->announce ? tor->announce : "(none)");
@@ -189,7 +170,7 @@ static int setup_output_context(config_t *cfg, const torrent_t *tor) {
  * @param cfg         Указатель на конфигурацию (содержит информацию о выводе).
  * @return Количество оставшихся (нескачанных) кусков. 0, если все скачаны успешно.
  */
-int download_pieces(const torrent_t *tor, const peer_t *peers, int peer_count,
+static int download_pieces(const torrent_t *tor, const peer_t *peers, int peer_count,
                     const uint8_t my_peer_id[20],const config_t *cfg)
 
 {
