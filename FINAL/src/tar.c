@@ -1,18 +1,11 @@
 #include "tar.h"
 
-#include "utils.h"
-#include <string.h>
-#include <stdlib.h>
-#include <time.h>
-
-#define TAR_BLOCK_SIZE 512
-
-/** 
+/**
  * Запись значения в восьмеричную строку с завершающим нулём и пробелом (utar)
  *
- * @val - числовое значение
- * @*buf - указатель на буфер для записи
- * @size - размер буфера
+ * @param val - числовое значение
+ * @param *buf - указатель на буфер для записи
+ * @param size - размер буфера
  * */
 static void oct_to_str(uint64_t val, char *buf, int size) {
     char fmt[16];
@@ -23,7 +16,7 @@ static void oct_to_str(uint64_t val, char *buf, int size) {
 /** 
  * Вычисление контрольной суммы заголовка 
  *
- * @*hdr - указатель на заголовок tar_header_t
+ * @param *hdr - указатель на заголовок tar_header_t
  * @return - контрольная сумма
  */
 static unsigned int calculate_checksum(const tar_header_t *hdr) {
@@ -38,9 +31,9 @@ static unsigned int calculate_checksum(const tar_header_t *hdr) {
 /** 
  * Запись заголовка для файла с именем path и размером size 
  * 
- * @*tw - указатель на объект tar_writer_t
- * @*path - полный путь
- * @size - размер
+ * @param *tw - указатель на объект tar_writer_t
+ * @param *path - полный путь
+ * @param size - размер
  * */
 static void write_header(tar_writer_t *tw, const char *path, uint64_t size) {
     tar_header_t hdr;
@@ -72,7 +65,7 @@ static void write_header(tar_writer_t *tw, const char *path, uint64_t size) {
 /**
  * Добавляет паддинг до следующей границы 512 байт, если необходимо
  *
- * @*tw -указатель на объект tar_writer_t
+ * @param *tw -указатель на объект tar_writer_t
  */
 static void write_padding(tar_writer_t *tw) {
     uint64_t mod = tw->total_written % TAR_BLOCK_SIZE;
@@ -87,8 +80,8 @@ static void write_padding(tar_writer_t *tw) {
 /**
  * Создает и заполняет структуру для формирования отслеживания файлов tar- архива
  *
- * @*out - укзатель на поток вывода
- * @*tor - указатель на структуру описывающую torrent
+ * @param *out - укзатель на поток вывода
+ * @param *tor - указатель на структуру описывающую torrent
  * @return tar_writer_t * - возвращает указатель на структуру для работы с tar-архивом
  */
 tar_writer_t *tar_writer_open(FILE *out, const torrent_t *tor) {
@@ -103,10 +96,10 @@ tar_writer_t *tar_writer_open(FILE *out, const torrent_t *tor) {
 /**
  * Записывает блок данных в поток
  *
- * @tw - указатель на структуру tar_writer (отслеживает сколько осталось записать, интекс текущего файла и тд.)
- * @piece_index - номер блока
- * @*data - указатель на данные блока
- * @len - длина блока
+ * @param tw - указатель на структуру tar_writer (отслеживает сколько осталось записать, интекс текущего файла и тд.)
+ * @param piece_index - номер блока
+ * @param *data - указатель на данные блока
+ * @param len - длина блока
  */
 void tar_writer_write(tar_writer_t *tw, uint32_t piece_index, const uint8_t *data, uint32_t len) {
     uint64_t piece_start = (uint64_t)piece_index * tw->tor->piece_length;
@@ -160,7 +153,7 @@ void tar_writer_write(tar_writer_t *tw, uint32_t piece_index, const uint8_t *dat
 /**
  * Освобождение памяти под объект tar_writer_t
  *
- * @*tw -указатель на объект
+ * @param *tw -указатель на объект
  */
 void tar_writer_close(tar_writer_t *tw) {
     if (!tw) return;

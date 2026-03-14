@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include "torrent.h"
 #include "utils.h"
+
 #define TAR_BLOCK_SIZE 512
 
 /* Формат заголовка ustar (512 байт) */
