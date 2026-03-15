@@ -1,5 +1,14 @@
 #include "peer.h"
 
+/**
+ * Выполняет handshake с пиром. Отправляет рукопожатие и проверяет ответ
+ * @param sock номер сокета
+ * @param *tor указатель на структуру с данными торрента (info_hash)
+ * @param *my_peer_id указатель на наш peer_id
+ * @param *peer_id_out укзатель на peer_id удаленного узла (заполняется после успешного handshake)
+ * @return успех/ошибка (0/-1)
+ */ 
+
 int peer_handshake(int sock, const torrent_t *tor, const uint8_t *my_peer_id, uint8_t *peer_id_out) {
     uint8_t hs_out[HANDSHAKE_SIZE];
     uint8_t hs_in[HANDSHAKE_SIZE];
@@ -11,12 +20,12 @@ int peer_handshake(int sock, const torrent_t *tor, const uint8_t *my_peer_id, ui
     memcpy(hs_out + 28, tor->info_hash, 20);
     memcpy(hs_out + 48, my_peer_id, 20);
 
-    if (send_full_timeout(sock, hs_out, HANDSHAKE_SIZE, 10000) < 0) {
+    if (send_full_timeout(sock, hs_out, HANDSHAKE_SIZE, HANDSHAKE_TIMEOUT) < 0) {
         LOG_ERROR("Failed to send handshake");
         goto handshake_error;
     }
 
-    if (recv_full_timeout(sock, hs_in, HANDSHAKE_SIZE, 10000) < 0) {
+    if (recv_full_timeout(sock, hs_in, HANDSHAKE_SIZE, HANDSHAKE_TIMEOUT) < 0) {
         LOG_ERROR("Failed to receive handshake");
         goto handshake_error;
     }
@@ -42,12 +51,25 @@ int peer_handshake(int sock, const torrent_t *tor, const uint8_t *my_peer_id, ui
 handshake_error:
     return -1;
 }
-
+/**
+ * Отправляет пиру сообщение interested (ID 2), чтобы показать, что мы хотим скачивать. 
+ * @param sock - сокет
+ * @return успех/ошибка (0/-1)
+ */
 int peer_send_interested(int sock) {
     uint8_t msg[] = {0,0,0,1, 2}; // length=1, id=2 (interested)
-    return send_full_timeout(sock, msg, 5, 5000);
+    return send_full_timeout(sock, msg, 5, PEER_SEND_TIMEOUT);
 }
 
+/**
+ * Запросить блок данных у пира. Сообщение request (ID 6).
+ *
+ * @param sock номер сокета
+ * @param index индекс куска
+ * @param begin смещение внутри куска в байтах
+ * @param length длина блок (стандартно - 16KiB)
+ * @return успех/ошибка (0/-1)
+ */
 int peer_send_request(int sock, uint32_t index, uint32_t begin, uint32_t length) {
 
     uint8_t msg[17];
@@ -60,9 +82,21 @@ int peer_send_request(int sock, uint32_t index, uint32_t begin, uint32_t length)
     memcpy(msg+9, &beg, 4);
     uint32_t l = htonl(length);
     memcpy(msg+13, &l, 4);
-    return send_full_timeout(sock, msg, 17, 5000);
+    return send_full_timeout(sock, msg, 17, PEER_SEND_TIMEOUT);
 }
 
+
+/**
+ * Прочитать следующее сообщение от пира. Возвращает идентификатор сообщения и динамически выделенный буфер с payload (включая данные после ID). 
+ * При keep-alive (длина 0) возвращает msg_id = 0xFF и нулевой payload.
+ *
+ * @param sock номер сокета
+ * @param *msg_id[out] идентификатор сообщения 
+ * @param **payload полученные данные
+ * @param *payload_len длина данных
+ * @param timeout_ms таймаут
+ * @return успех/ошибка (0/-1)
+ */
 int peer_read_message(int sock, uint8_t *msg_id, uint8_t **payload, size_t *payload_len, int timeout_ms) {
     uint8_t *msg;
     size_t len;
@@ -80,7 +114,7 @@ int peer_read_message(int sock, uint8_t *msg_id, uint8_t **payload, size_t *payl
     *payload_len = len - 1;
     if (*payload_len > 0) {
         *payload = xmalloc(*payload_len);
-        memcpy(*payload, msg + 1, *payload_len);
+        memcpy(*payload, msg + 1, *payload_len); //копируем данные, т.к. msg будет перезаписан в следующий раз
     } else {
         *payload = NULL;
     }
@@ -88,6 +122,18 @@ int peer_read_message(int sock, uint8_t *msg_id, uint8_t **payload, size_t *payl
     return 0;
 }
 
+/**
+ * После отправки interested ожидать, пока пир не пришлёт unchoke (ID 1). 
+ * За одно обрабатывает другие сообщения: bitfield, have, choke. 
+ * Сохраняет битовое поле, если оно пришло.
+ * 
+ * @param sock номер сокета
+ * @param expected_index индекс ожидаемого куска
+ * @param *buffer 
+ * @param length
+ * @param timeout_ms
+ * @return успех/ошибка (0/-1)
+ */
 int peer_receive_piece(int sock, uint32_t expected_index, uint8_t *buffer, size_t length, int timeout_ms) {
     uint8_t *payload;
     size_t payload_len;
@@ -103,20 +149,21 @@ int peer_receive_piece(int sock, uint32_t expected_index, uint8_t *buffer, size_
                 return -1;
             }
             uint32_t index, begin;
-            memcpy(&index, payload, 4);
-            memcpy(&begin, payload + 4, 4);
+            memcpy(&index, payload, 4); //индекс куска
+            memcpy(&begin, payload + 4, 4); //позиция начала данных в куске
             index = ntohl(index);
             begin = ntohl(begin);
             size_t block_len = payload_len - 8;
 
             if (index != expected_index || begin != 0 || block_len != length) {
-                // Не тот кусок или не с начала — в нашей упрощённой схеме мы запрашиваем кусок целиком с begin=0
+                // Не тот кусок или не с начала — мы запрашиваем кусок целиком с begin=0
+                LOG_DEBUG("Ignored message id %d", msg_id);
                 free(payload);
                 continue; // игнорируем другие сообщения (можно обработать have и т.п.)
             }
-            memcpy(buffer, payload + 8, block_len);
+            memcpy(buffer, payload + 8, block_len); //копируем данные в выходной буфер
             free(payload);
-            return 0;
+            return 0;// выходим, если получили запрашиваемый кусок данных
         } else {
             // Обрабатываем другие сообщения (choke, unchoke, have, bitfield) если нужно
             // Пока просто игнорируем
@@ -125,8 +172,13 @@ int peer_receive_piece(int sock, uint32_t expected_index, uint8_t *buffer, size_
         }
     }
 }
-
-// Функция ожидания unchoke с обработкой промежуточных сообщений (bitfield, have и т.д.)
+/**
+ * Функция ожидания unchoke с обработкой промежуточных сообщений (bitfield, have и т.д.)
+ *
+ * @param *peer указатель на струкутуру с данными о пире
+ * @param timeout_ms таймаут
+ * @return успех/ошибка (0/-1)
+ */
 int peer_wait_for_unchoke(peer_connection_t *peer, int timeout_ms) {
     while (running && peer->choked) {
         uint8_t msg_id;
@@ -156,7 +208,7 @@ int peer_wait_for_unchoke(peer_connection_t *peer, int timeout_ms) {
                     if (byte < peer->bitfield_len) {
                         peer->bitfield[byte] |= 1 << (7 - (index % 8));
                     } else {
-                        // можно расширить битовое поле, но для простоты проигнорируем
+                        // У пира появились новые данные, можно расширить битовое поле
                         LOG_DEBUG("RECIEVED \"HAVE\" for a piece %u beyond current bitfield", index);
                     }
                 }
@@ -174,11 +226,18 @@ int peer_wait_for_unchoke(peer_connection_t *peer, int timeout_ms) {
             break;
         }
         free(payload);
-        if (!peer->choked) break; // выходим, если расчокнули
+        if (!peer->choked) break; // выходим, если мы больше не chocked 
     }
     return peer->choked ? -1 : 0;
 }
 
+/**
+ * Проверяет, есть ли у пира кусок с данным индексом. 
+ * 
+ * @param *peer указатель на структуру с данными о пире
+ * @param index индекс куска данных
+ * @return 1/0 есть/нет (бит из bitfield)
+ */
 int peer_has_piece(peer_connection_t *peer, uint32_t index) {
     if (!peer->bitfield) return 1; // нет информации - считаем, что есть
     size_t byte = index / 8;
@@ -186,8 +245,19 @@ int peer_has_piece(peer_connection_t *peer, uint32_t index) {
     return (peer->bitfield[byte] >> (7 - (index % 8))) & 1;
 }
 
-int peer_receive_block(int sock, uint32_t expected_index, uint32_t expected_begin,
-                       uint8_t *buffer, size_t length, int timeout_ms) {
+/**
+ * Ожидаетт и получает блок данных, соответствующий ранее отправленному request. 
+ * Функция игнорирует сообщения других блоков и обрабатывает возможные choke.
+ *
+ * @param sock номер сокета
+ * @param expected_index ожидаемый индекс куска
+ * @param expected_begin ожидаемое начало куска (смещение)
+ * @param *buffer указатель на буфер для записи данных
+ * @param length ожидаема длина данных
+ * @param timeout_ms таймаут
+ * @return успех/ошибка (0/-1)
+ */
+int peer_receive_block(int sock, uint32_t expected_index, uint32_t expected_begin, uint8_t *buffer, size_t length, int timeout_ms) {
     uint8_t *payload;
     size_t payload_len;
     uint8_t msg_id;
@@ -238,6 +308,10 @@ int peer_receive_block(int sock, uint32_t expected_index, uint32_t expected_begi
     }
 }
 
+/**
+ * Закрыть соединение с пиром
+ * @param *peer указатель на структуру с данными о пире
+ */
 void peer_close(peer_connection_t *peer) {
     if (peer->sock >= 0) close(peer->sock);
     free(peer->bitfield);

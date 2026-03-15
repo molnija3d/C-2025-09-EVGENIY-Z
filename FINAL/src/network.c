@@ -96,7 +96,7 @@ int tcp_connect_timeout(uint32_t ip, uint16_t port, int timeout_ms) {
  * @param *buf указатель на буфер с данными
  * @param len длина данных
  * @param timeout_ms таймаут
- * @return успех/ошибка (0/1)
+ * @return успех/ошибка (0/-1)
  */
 int send_full_timeout(int sock, const void *buf, size_t len, int timeout_ms) {
     size_t sent = 0; // счетчик отправленных байт
@@ -133,7 +133,7 @@ int send_full_timeout(int sock, const void *buf, size_t len, int timeout_ms) {
  * @param *buf указатель на буфер с данными
  * @param len длина данных
  * @param timeout_ms таймаут
- * @return успех/ошибка (0/1)
+ * @return успех/ошибка (0/-1)
  */
 int recv_full_timeout(int sock, void *buf, size_t len, int timeout_ms) {
     size_t received = 0; //счетчик полученных байт
@@ -172,7 +172,7 @@ int recv_full_timeout(int sock, void *buf, size_t len, int timeout_ms) {
  * @param **payload указатель на динамический буфер
  * @param *payload_len указатель на длину сообщения
  * @param timeout_ms таймаут
- * @return
+ * @return усех/ошибка (0/-1)
  */
 int recv_message(int sock, uint8_t **payload, size_t *payload_len, int timeout_ms) {
     uint32_t len_prefix; //длина сообщения

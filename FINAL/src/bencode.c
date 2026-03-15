@@ -82,7 +82,9 @@ static void encode_obj(dynbuf_t *b, const ben_obj_t *obj) {
 }
 /**
  * Создание и заполнение динамического буфера
- *
+ * @param *obj указатель на объект ben_obj_t
+ * @param *out_len указатель на длину данных, записанных в динамический буфер
+ * @return указатель на данные динамического буфера
  */
 uint8_t *bencode_encode(const ben_obj_t *obj, size_t *out_len) {
     dynbuf_t b;

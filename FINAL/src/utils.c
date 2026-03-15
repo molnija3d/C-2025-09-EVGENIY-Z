@@ -5,7 +5,7 @@ volatile int running = 1;
 /**
  * Обработчик сигналов
  * 
- * @sig - номер сигнала
+ * @param sig - номер сигнала
  */
 static void signal_handler(int sig) {
     (void)sig;
@@ -70,8 +70,8 @@ void xfree(void *ptr) {
 /**
  * Читает данные из файла в буфер в памяти
  *
- * @*path - указатель на путь
- * @**data - указатель на указатель на буфер в памяти
+ * @param *path - указатель на путь
+ * @param **data - указатель на указатель на буфер в памяти
  * @return - размер данных
  */
 size_t read_file(const char *path, void **data) {
@@ -92,7 +92,7 @@ size_t read_file(const char *path, void **data) {
 /**
  * Читает данные из входящего потока и записывает в буфер
  * 
- * @**out - указатель на указатель на буфер в памяти
+ * @param **out - указатель на указатель на буфер в памяти
  * @return - размер данных
  */
 size_t read_stdin(uint8_t **out) {

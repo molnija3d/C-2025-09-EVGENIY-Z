@@ -3,8 +3,8 @@
 /** 
  * Вспомогательная функция для рекурсивного создания директорий
  * 
- * @ *path -полный путь до файла (без имени файла)
- * @ return успех/ошибка
+ * @param  *path -полный путь до файла (без имени файла)
+ * @param  return успех/ошибка
  */
 static int mkdir_p(const char *path) {
     char tmp[PATH_LEN];
@@ -31,9 +31,9 @@ static int mkdir_p(const char *path) {
 /**
  * Создает и инициализирует объект хранилища 
  * 
- * @*cfg - указатель на конфигурацию
- * @*tor - указатель на структуру, описывающую торрент
- * @return storage_t * - возвращает указатель на инициализированный объект хранилища
+ * @param *cfg - указатель на конфигурацию
+ * @param *tor - указатель на структуру, описывающую торрент
+ * @return storage_t* - возвращает указатель на инициализированный объект хранилища
  */
 storage_t *storage_open(const config_t *cfg, const torrent_t *tor) {
     if (cfg->output_file && tor->file_count > 1) {
@@ -103,10 +103,10 @@ storage_t *storage_open(const config_t *cfg, const torrent_t *tor) {
 /**
  * Записывает в файл полученные данные(или их часть) начиная с нужной позиции
  *
- * @ *st - указатель на структуру хранилища, вней хронится список файлов и их параметры (дескриптор, путь, размер, имя и т.д.)
- * @ piece_index - номер части данных во входящем потоке
- * @ *data - данные
- * @ len - длина данных
+ * @param  *st - указатель на структуру хранилища, вней хронится список файлов и их параметры (дескриптор, путь, размер, имя и т.д.)
+ * @param  piece_index - номер части данных во входящем потоке
+ * @param  *data - данные
+ * @param  len - длина данных
  */
 void storage_write(storage_t *st, uint32_t piece_index, const uint8_t *data, uint32_t len) {
     uint64_t piece_start = (uint64_t)piece_index * st->piece_length;
@@ -143,7 +143,7 @@ void storage_write(storage_t *st, uint32_t piece_index, const uint8_t *data, uin
 /**
  * Совобождение памяти объекта хранилища
  *
- * @*st -указатель на объект хранилища
+ * @param *st -указатель на объект хранилища
  */
 void storage_close(storage_t *st) {
     if (!st) return;
