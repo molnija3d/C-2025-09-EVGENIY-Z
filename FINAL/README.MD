@@ -106,6 +106,8 @@ Bencode (BitTorrent encoding) — простой формат сериализа
 
 В проекте реализованы функции bencode_decode для разбора и bencode_encode для сериализации.
 
+Пример библиотеки bencode [libbencode](https://github.com/afraz98/libbencode)
+
 ## 5. Как работает BitTorrent (упрощённо)
 Метаданные — torrent-файл содержит announce URL трекера и словарь info с именем файла, размером куска (piece length), списком SHA1-хешей кусков и для multi-file — списком файлов с путями.
 
