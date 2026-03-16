@@ -235,6 +235,11 @@ int torrent_load(const char *filename, torrent_t *tor) {
     return ret;
 }
 
+/**
+ * Усвобождает структуру с описание торрента
+ *
+ * @param *tor указатель на структуру torrent_t
+ */
 void torrent_free(torrent_t *tor) {
     if (tor->announce) free(tor->announce);
     if (tor->comment) free(tor->comment);
@@ -245,6 +250,13 @@ void torrent_free(torrent_t *tor) {
     memset(tor, 0, sizeof(torrent_t));
 }
 
+/**
+ * Отправляет размер куска для скачивания по номеру индекса. Эти данные уже загружены в структуру описывающую торрент ранее.
+ *
+ * @param *tor указатель на структуру torrent_t
+ * @param index номер индекса
+ * @return размер куска данных 
+ */
 uint32_t piece_size(const torrent_t *tor, uint32_t index) {
     if (index < tor->num_pieces - 1) {
         return tor->piece_length;
@@ -255,6 +267,14 @@ uint32_t piece_size(const torrent_t *tor, uint32_t index) {
     return 0;
 }
 
+/**
+ * Проверка куска данных на целостность с помощью SHA1
+ * 
+ * @param *tor указатель на torrent_t с описанием торрента
+ * @param index номер куска данных
+ * @param *data указатель на данные для сранвения
+ * @return успех/ошибка (1/0)
+ */
 int verify_piece(const torrent_t *tor, uint32_t index, const uint8_t *data) {
     if (index >= tor->num_pieces) return 0;
     uint8_t hash[20];
