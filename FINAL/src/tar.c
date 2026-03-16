@@ -72,7 +72,7 @@ static void write_padding(tar_writer_t *tw) {
     if (mod != 0) {
         size_t pad = TAR_BLOCK_SIZE - mod;
         uint8_t zeros[512] = {0};
-        fwrite(zeros, 1, pad, tw->out);
+        fwrite(zeros, 1, pad, tw->out); //tw->out указатель на выходной поток (файл)
         tw->total_written += pad;
     }
 }
