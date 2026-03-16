@@ -11,9 +11,11 @@
 #include "peer.h"
 #include "bencode.h"
 #include "utils.h"
-#define PEER_PREFIX "-TR2940-"
+#define PEER_PREFIX "-TR3001-"    //TR - Transmission клиент, версия 3.0.0.1 
+//#define PEER_PREFIX "-qB4390-" //qB - BitTorrent клиент, версия 4.3.9.0 
+                                //есть и другие идентификаторы клиентов, но qB или TR реже блокруют
 #define URL_LEN 2048
-#define CLIENT_PORT 41713
+#define CLIENT_PORT 60703      //0, сообщаем трекеру что ничего не отдаем. Иногда из-за этого блокируют. Можно сообщить любой свободный порт, например 60703
 
 // Структура для накопления данных ответа
 typedef struct memory {

@@ -6,27 +6,47 @@
 #include <openssl/sha.h>
 #include <stdlib.h>
 
-// Вспомогательная функция для освобождения массива строк
+/**
+ * Вспомогательная функция для освобождения массива строк
+ *
+ * @param **arr указатель на масссив строк
+ * @param len длина
+ */
 static void free_str_array(char **arr, size_t len) {
     if (!arr) return;
     for (size_t i = 0; i < len; i++) free(arr[i]);
     free(arr);
 }
 
-// Освобождение одного file_t
+/**
+ * Освобождение одного file_t
+ *
+ * @param указатель на структуру, описывающую файл
+ */
 static void free_file(file_t *f) {
     if (!f) return;
     free_str_array(f->path, f->path_len);
 }
 
-// Освобождение всех файлов
+/**
+ * Освобождение всех файлов
+ *
+ * @param указатель на массив файлов
+ * @param число файлов (элементов массива)
+ */
 static void free_files(file_t *files, size_t count) {
     if (!files) return;
     for (size_t i = 0; i < count; i++) free_file(&files[i]);
     free(files);
 }
 
-// Рекурсивное копирование строки из bencode-строки (с добавлением нуля)
+/**
+* Рекурсивное копирование строки из bencode-строки (с добавлением нуля)
+*
+* @param указатель на объект bencode
+* @return возвращает строку из объекта bencode
+*/
+
 static char *str_from_bencode(const ben_obj_t *obj) {
     if (!obj || obj->type != BEN_STRING) return NULL;
     size_t len;
@@ -37,7 +57,12 @@ static char *str_from_bencode(const ben_obj_t *obj) {
     return s;
 }
 
-// Парсинг списка path из bencode-листа (каждый элемент — строка)
+/**
+ * Парсинг списка path из bencode-листа (каждый элемент — строка)
+ * @param *list - указатель на список в формате ben_obj_t
+ * @param *out_len указатель на длину пути
+ * @return указатель на путь
+ */
 static char **parse_path_list(const ben_obj_t *list, size_t *out_len) {
     if (!list || list->type != BEN_LIST) return NULL;
     size_t count = list->value.list.count;
@@ -58,9 +83,10 @@ static char **parse_path_list(const ben_obj_t *list, size_t *out_len) {
 /**
  * Основная функция загрузки. Заполняет структуру torrent_t *tor данными из torrent-файла
  *
- * @*data - указатель на данные
- * @size - размер данных
- * @*tor - указатель на структуру для заполнения
+ * @param *data - указатель на данные
+ * @param size - размер данных
+ * @param *tor - указатель на структуру для заполнения
+ * @return успех/ошибка (0/-1)
  */
 
 int torrent_load_from_memory(const uint8_t *data, size_t size, torrent_t *tor) {
@@ -196,9 +222,9 @@ load_failure_root:
 /**
  * Загрузка торрента из файла
  *
- * @ *filename - указатель на путь к файлу
- * @ *tor - указатель на структуру, которую надо заполнимить
- * @ return - успех/ошибка
+ * @param  *filename - указатель на путь к файлу
+ * @param  *tor - указатель на структуру, которую надо заполнимить
+ * @return - успех/ошибка
  */
 int torrent_load(const char *filename, torrent_t *tor) {
     void *data;
