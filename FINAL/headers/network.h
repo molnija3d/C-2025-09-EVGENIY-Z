@@ -15,6 +15,9 @@
 #include <fcntl.h>
 #include "utils.h"
 
+#define CONNECTIOIN_TIMEOUT 10000
+#define UNCHOKE_TIMEOUT 30000
+#define RECEIVE_TIMEOUT 30000
 // Подключение к пиру по IP и порту с таймаутом (в миллисекундах)
 // Возвращает сокет или -1 при ошибке
 int tcp_connect_timeout(uint32_t ip, uint16_t port, int timeout_ms);

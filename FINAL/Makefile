@@ -14,7 +14,7 @@ BUILD_DIR = builds
 BUILD_SANITIZE_DIR = $(BUILD_DIR)/sanitize
 
 # Исходные файлы (лежат в src/)
-SRCS = main.c utils.c bencode.c torrent.c tracker.c network.c peer.c storage.c tar.c config.c
+SRCS = main.c utils.c bencode.c torrent.c tracker.c network.c peer.c storage.c tar.c 
 # Полные пути к исходникам
 SRCS := $(addprefix $(SRC_DIR)/, $(SRCS))
 

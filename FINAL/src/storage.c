@@ -149,8 +149,8 @@ void storage_close(storage_t *st) {
     if (!st) return;
     for (size_t i = 0; i < st->file_count; i++) {
         if (st->files[i].fp) fclose(st->files[i].fp);
-        free(st->files[i].full_path);
+        xfree(st->files[i].full_path);
     }
-    free(st->files);
-    free(st);
+    xfree(st->files);
+    xfree(st);
 }

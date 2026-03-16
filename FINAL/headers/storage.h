@@ -3,8 +3,8 @@
 
 #define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
-#include "config.h"
 #include "torrent.h"
+#include "utils.h"
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
